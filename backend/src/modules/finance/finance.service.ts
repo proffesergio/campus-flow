@@ -244,12 +244,16 @@ export async function createStripePaymentIntent(schoolId: string, invoiceId: str
 
   const remainingAmount = Number(invoice.amount) - Number(invoice.paidAmount);
 
-  const intent = await stripe.paymentIntents.create({
-    amount: Math.round(remainingAmount * 100),
-    currency: invoice.currency.toLowerCase() === 'bdt' ? 'usd' : invoice.currency.toLowerCase(),
-    metadata: { invoiceId, schoolId },
-    idempotency_key: `invoice-${invoiceId}-${Date.now()}`,
-  } as Parameters<Stripe['paymentIntents']['create']>[0]);
+  const intent = await stripe.paymentIntents.create(
+    {
+      amount: Math.round(remainingAmount * 100),
+      currency: invoice.currency.toLowerCase() === 'bdt' ? 'usd' : invoice.currency.toLowerCase(),
+      metadata: { invoiceId, schoolId },
+    },
+    // idempotencyKey is a request option, not a body param — keyed on the
+    // invoice + remaining amount so retries of the same charge are deduped.
+    { idempotencyKey: `invoice-${invoiceId}-${Math.round(remainingAmount * 100)}` },
+  );
 
   await prisma.invoice.update({
     where: { id: invoiceId },
@@ -267,7 +271,7 @@ export async function handleStripeWebhook(body: Buffer, signature: string) {
   const { default: Stripe } = await import('stripe');
   const stripe = new Stripe(stripeKey);
 
-  let event: import('stripe').Stripe.Event;
+  let event: ReturnType<typeof stripe.webhooks.constructEvent>;
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch {
@@ -275,7 +279,7 @@ export async function handleStripeWebhook(body: Buffer, signature: string) {
   }
 
   if (event.type === 'payment_intent.succeeded') {
-    const intent = event.data.object as import('stripe').Stripe.PaymentIntent;
+    const intent = event.data.object;
     const invoice = await prisma.invoice.findFirst({
       where: { stripePaymentIntentId: intent.id },
     });
@@ -431,7 +435,7 @@ export async function getDashboardStats(schoolId: string) {
   const [allInvoices, thisMonthPayments, recentPayments] = await Promise.all([
     prisma.invoice.findMany({
       where: { schoolId },
-      select: { status: true, amount: true, paidAmount: true, dueDate: true, currency: true },
+      select: { status: true, amount: true, paidAmount: true, dueDate: true, currency: true, paidAt: true },
     }),
     prisma.payment.findMany({
       where: {

@@ -18,6 +18,7 @@ import financeRouter from './modules/finance/finance.routes';
 import notificationsRouter from './modules/notifications/notifications.routes';
 import aiRouter from './modules/ai/ai.routes';
 import practiceMaterialsRouter from './modules/practice-materials/practice-materials.routes';
+import schoolsRouter from './modules/schools/schools.routes';
 
 const app = express();
 
@@ -132,6 +133,7 @@ app.use('/api/finance', financeRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/practice-materials', practiceMaterialsRouter);
+app.use('/api/schools', schoolsRouter);
 
 app.use(errorHandler);
 

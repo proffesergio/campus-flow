@@ -1,6 +1,6 @@
 import { prisma } from '../../config/prisma';
 import {
-  sendEmail, sendSMS, createInAppNotification,
+  sendSMS, createInAppNotification,
   logNotification, substituteVariables,
 } from '../../services/notification.service';
 import type { BroadcastInput } from './notifications.validator';

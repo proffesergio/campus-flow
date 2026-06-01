@@ -13,8 +13,10 @@ import StudentDrawer from '@/components/students/StudentDrawer';
 interface Class { id: string; name: string; section: string | null }
 interface Student {
   id: string; firstName: string; lastName: string; rollNumber: string | null;
-  status: string; guardianPhone: string | null; guardianName: string | null;
-  class: { name: string; section: string | null } | null;
+  photoUrl: string | null;
+  status: 'active' | 'inactive' | 'graduated' | 'transferred';
+  guardianPhone: string; guardianName?: string | null;
+  class: { id: string; name: string; section: string | null };
 }
 interface Stats { total: number; active: number; thisMonth: number }
 interface Meta { total: number; page: number; limit: number; totalPages: number }
@@ -234,8 +236,7 @@ export default function StudentsPage() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         student={editingStudent}
-        classes={classes}
-        onSaved={fetchStudents}
+        onSuccess={fetchStudents}
       />
     </div>
   );

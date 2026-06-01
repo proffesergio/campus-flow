@@ -19,10 +19,12 @@ import {
   GraduationCap,
   ChevronLeft,
   LogOut,
+  Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import CommandPalette from '@/components/CommandPalette';
 
 const navGroups = [
   {
@@ -205,6 +207,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen bg-zinc-950 overflow-hidden">
+      <CommandPalette />
+
       {/* Desktop Sidebar */}
       <div className="hidden md:flex flex-shrink-0">
         <Sidebar />
@@ -244,6 +248,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             <Menu className="w-5 h-5" />
           </button>
+
+          {/* Command palette trigger */}
+          <button
+            onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+            className="group flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 h-9 text-sm text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors w-full max-w-xs"
+          >
+            <Search className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1 text-left">Search…</span>
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+              ⌘K
+            </kbd>
+          </button>
+
           <div className="flex-1" />
           <div ref={bellRef} className="relative">
             <button

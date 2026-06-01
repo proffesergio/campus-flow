@@ -6,6 +6,7 @@ import {
   View,
   StyleSheet,
   renderToBuffer,
+  type DocumentProps,
 } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
@@ -371,5 +372,5 @@ export async function generateReportCardPdf(
   data: ReportCardData,
 ): Promise<Buffer> {
   const doc = React.createElement(ReportCardDocument, { school, data });
-  return renderToBuffer(doc as React.ReactElement);
+  return renderToBuffer(doc as unknown as React.ReactElement<DocumentProps>);
 }
