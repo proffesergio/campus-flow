@@ -213,6 +213,51 @@ router.get('/invoices/:id', authenticate, controller.getInvoiceById);
 
 /**
  * @openapi
+ * /api/finance/invoices/{id}/receipt:
+ *   get:
+ *     tags: [Finance]
+ *     summary: Download the PDF receipt for an invoice's latest successful payment
+ *     parameters:
+ *       - $ref: '#/components/parameters/SchoolSlug'
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: "application/pdf receipt" }
+ *       404: { description: "No payment found for this invoice" }
+ */
+router.get(
+  '/invoices/:id/receipt',
+  authenticate,
+  requireRole('school_admin', 'finance', 'super_admin'),
+  controller.downloadInvoiceReceipt,
+);
+
+/**
+ * @openapi
+ * /api/finance/payments/{id}/receipt:
+ *   get:
+ *     tags: [Finance]
+ *     summary: Download the PDF receipt for a specific payment
+ *     parameters:
+ *       - $ref: '#/components/parameters/SchoolSlug'
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: "application/pdf receipt" }
+ */
+router.get(
+  '/payments/:id/receipt',
+  authenticate,
+  requireRole('school_admin', 'finance', 'super_admin'),
+  controller.downloadReceipt,
+);
+
+/**
+ * @openapi
  * /api/finance/invoices/{id}/pay-cash:
  *   post:
  *     tags: [Finance]

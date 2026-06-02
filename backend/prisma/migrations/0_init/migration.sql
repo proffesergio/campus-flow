@@ -69,6 +69,26 @@ CREATE TABLE "School" (
 );
 
 -- CreateTable
+CREATE TABLE "AuditLog" (
+    "id" TEXT NOT NULL,
+    "schoolId" TEXT NOT NULL,
+    "userId" TEXT,
+    "actorEmail" TEXT,
+    "actorRole" TEXT,
+    "action" TEXT NOT NULL,
+    "entity" TEXT NOT NULL,
+    "entityId" TEXT,
+    "method" TEXT NOT NULL,
+    "path" TEXT NOT NULL,
+    "statusCode" INTEGER NOT NULL,
+    "ip" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "schoolId" TEXT NOT NULL,
@@ -148,6 +168,7 @@ CREATE TABLE "Student" (
     "enrollmentDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "status" "StudentStatus" NOT NULL DEFAULT 'active',
     "userId" TEXT,
+    "parentId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -364,6 +385,15 @@ CREATE TABLE "PracticeMaterial" (
 CREATE UNIQUE INDEX "School_slug_key" ON "School"("slug");
 
 -- CreateIndex
+CREATE INDEX "AuditLog_schoolId_idx" ON "AuditLog"("schoolId");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_schoolId_entity_idx" ON "AuditLog"("schoolId", "entity");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_schoolId_createdAt_idx" ON "AuditLog"("schoolId", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "User_schoolId_idx" ON "User"("schoolId");
 
 -- CreateIndex
@@ -398,6 +428,9 @@ CREATE INDEX "Student_schoolId_idx" ON "Student"("schoolId");
 
 -- CreateIndex
 CREATE INDEX "Student_schoolId_classId_idx" ON "Student"("schoolId", "classId");
+
+-- CreateIndex
+CREATE INDEX "Student_schoolId_parentId_idx" ON "Student"("schoolId", "parentId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Student_schoolId_classId_rollNumber_key" ON "Student"("schoolId", "classId", "rollNumber");
@@ -484,6 +517,9 @@ CREATE INDEX "PracticeMaterial_schoolId_idx" ON "PracticeMaterial"("schoolId");
 CREATE INDEX "PracticeMaterial_schoolId_subjectId_idx" ON "PracticeMaterial"("schoolId", "subjectId");
 
 -- AddForeignKey
+ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "School"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "School"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -512,6 +548,9 @@ ALTER TABLE "Student" ADD CONSTRAINT "Student_classId_fkey" FOREIGN KEY ("classI
 
 -- AddForeignKey
 ALTER TABLE "Student" ADD CONSTRAINT "Student_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Student" ADD CONSTRAINT "Student_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "School"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

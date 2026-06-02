@@ -383,46 +383,143 @@ export async function initiateSSLCommerz(
   return { gatewayUrl: res.data.GatewayPageURL };
 }
 
+/**
+ * Server-side validation of an SSLCommerz IPN. The raw IPN POST is untrusted —
+ * an attacker could forge one — so we re-fetch the transaction from SSLCommerz's
+ * validation API using the val_id and confirm it is genuinely VALID/VALIDATED.
+ */
+async function validateSSLCommerzTransaction(
+  valId: string,
+  storeId: string,
+  storePass: string,
+): Promise<Record<string, string> | null> {
+  const isLive = process.env['SSLCOMMERZ_IS_LIVE'] === 'true';
+  const host = isLive ? 'https://securepay.sslcommerz.com' : 'https://sandbox.sslcommerz.com';
+  const url = `${host}/validator/api/validationserverAPI.php`;
+  const { default: axios } = await import('axios');
+  const res = await axios.get<Record<string, string>>(url, {
+    params: { val_id: valId, store_id: storeId, store_passwd: storePass, format: 'json' },
+  });
+  const status = res.data?.['status'];
+  if (status !== 'VALID' && status !== 'VALIDATED') return null;
+  return res.data;
+}
+
 export async function handleSSLCommerzIPN(data: Record<string, string>) {
   const storeId = process.env['SSLCOMMERZ_STORE_ID'];
   const storePass = process.env['SSLCOMMERZ_STORE_PASS'];
   if (!storeId || !storePass) return;
 
-  if (data['status'] !== 'VALID') return;
+  const valId = data['val_id'];
+  if (!valId) return;
 
-  const invoiceId = data['tran_id']?.split('-')[1];
+  // 1) Re-validate against SSLCommerz (never trust the raw POST body).
+  const verified = await validateSSLCommerzTransaction(valId, storeId, storePass);
+  if (!verified) return;
+
+  // 2) Resolve the invoice from our tran_id format: CF-<invoiceId>-<timestamp>.
+  const tranId = verified['tran_id'] ?? data['tran_id'] ?? '';
+  const invoiceId = tranId.split('-')[1];
   if (!invoiceId) return;
 
   const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
   if (!invoice || invoice.status === 'paid') return;
 
-  const paidAmount = parseFloat(data['amount'] ?? '0');
+  // 3) Idempotency — ignore a val_id we've already recorded.
+  const existing = await prisma.payment.findFirst({
+    where: { invoiceId: invoice.id, gatewayRef: valId },
+  });
+  if (existing) return;
 
+  // 4) Amount must match what the validator reports (guards tampering).
+  const paidAmount = parseFloat(verified['amount'] ?? '0');
+  const remaining = Number(invoice.amount) - Number(invoice.paidAmount);
+  if (!(paidAmount > 0) || paidAmount < remaining - 0.5) return;
+
+  const newPaid = Number(invoice.paidAmount) + paidAmount;
   await prisma.$transaction([
     prisma.payment.create({
       data: {
         schoolId: invoice.schoolId,
         invoiceId: invoice.id,
         amount: paidAmount,
-        currency: data['currency'] ?? invoice.currency,
+        currency: verified['currency'] ?? invoice.currency,
         method: 'sslcommerz',
         gateway: 'sslcommerz',
-        gatewayRef: data['bank_tran_id'],
+        gatewayRef: valId,
         status: 'success',
-        metadata: { sslTranId: data['tran_id'], bankTranId: data['bank_tran_id'] },
+        metadata: {
+          sslTranId: tranId,
+          bankTranId: verified['bank_tran_id'] ?? null,
+          cardType: verified['card_type'] ?? null,
+        },
       },
     }),
     prisma.invoice.update({
       where: { id: invoice.id },
       data: {
-        paidAmount: Number(invoice.paidAmount) + paidAmount,
-        status: Number(invoice.paidAmount) + paidAmount >= Number(invoice.amount) ? 'paid' : 'partial',
+        paidAmount: newPaid,
+        status: newPaid >= Number(invoice.amount) ? 'paid' : 'partial',
         paidAt: new Date(),
         paymentMethod: 'sslcommerz',
-        transactionId: data['bank_tran_id'],
+        transactionId: verified['bank_tran_id'] ?? tranId,
       },
     }),
   ]);
+}
+
+/**
+ * Assemble receipt data for a successful payment and render it to a PDF buffer.
+ */
+export async function getPaymentReceiptPdf(schoolId: string, paymentId: string) {
+  const payment = await prisma.payment.findFirst({
+    where: { id: paymentId, schoolId },
+    include: {
+      invoice: {
+        include: {
+          student: { include: { class: { select: { name: true, section: true } } } },
+        },
+      },
+      school: { select: { name: true, address: true, phone: true } },
+    },
+  });
+  if (!payment) throw new AppError(404, 'Payment not found');
+
+  const { generateReceiptPdf } = await import('../../services/receipt.service');
+  const inv = payment.invoice;
+  const st = inv.student;
+  const className = `${st.class.name}${st.class.section ? ` ${st.class.section}` : ''}`;
+
+  return generateReceiptPdf({
+    receiptNo: `RCP-${payment.id.slice(-8).toUpperCase()}`,
+    paidAt: payment.paidAt,
+    amount: Number(payment.amount),
+    currency: payment.currency,
+    method: payment.method,
+    gatewayRef: payment.gatewayRef,
+    school: payment.school,
+    invoice: {
+      title: inv.title,
+      totalAmount: Number(inv.amount),
+      paidToDate: Number(inv.paidAmount),
+    },
+    student: {
+      firstName: st.firstName,
+      lastName: st.lastName,
+      rollNumber: st.rollNumber,
+      className,
+    },
+  });
+}
+
+/** The payment id for an invoice's most recent successful payment (for receipts). */
+export async function latestPaymentIdForInvoice(schoolId: string, invoiceId: string) {
+  const payment = await prisma.payment.findFirst({
+    where: { schoolId, invoiceId, status: 'success' },
+    orderBy: { paidAt: 'desc' },
+    select: { id: true },
+  });
+  return payment?.id ?? null;
 }
 
 // ── Dashboard ──────────────────────────────────────────────────────────────────

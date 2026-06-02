@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/register', '/_next', '/favicon.ico', '/api'];
+const PUBLIC_PATHS = [
+  '/login', '/register', '/legal', '/offline', '/_next', '/favicon.ico',
+  '/manifest.webmanifest', '/icon.svg', '/sw.js', '/api',
+];
 
 type Role = 'super_admin' | 'school_admin' | 'teacher' | 'parent' | 'student' | 'finance';
 

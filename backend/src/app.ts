@@ -8,6 +8,7 @@ import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env';
 import { swaggerSpec } from './config/swagger';
 import { tenantMiddleware } from './middleware/tenant';
+import { auditMiddleware } from './middleware/audit';
 import { errorHandler } from './middleware/errorHandler';
 import authRouter from './modules/auth/auth.routes';
 import classesRouter from './modules/classes/classes.routes';
@@ -19,6 +20,9 @@ import notificationsRouter from './modules/notifications/notifications.routes';
 import aiRouter from './modules/ai/ai.routes';
 import practiceMaterialsRouter from './modules/practice-materials/practice-materials.routes';
 import schoolsRouter from './modules/schools/schools.routes';
+import parentsRouter from './modules/parents/parents.routes';
+import auditRouter from './modules/audit/audit.routes';
+import analyticsRouter from './modules/analytics/analytics.routes';
 
 const app = express();
 
@@ -124,6 +128,8 @@ app.use('/api/ai', aiLimiter);
 
 // All API routes require tenant resolution (except health)
 app.use('/api', tenantMiddleware);
+// Record mutating actions to the audit trail (fire-and-forget, after tenant resolution)
+app.use('/api', auditMiddleware);
 app.use('/api/auth', authRouter);
 app.use('/api/classes', classesRouter);
 app.use('/api/students', studentsRouter);
@@ -134,6 +140,9 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/practice-materials', practiceMaterialsRouter);
 app.use('/api/schools', schoolsRouter);
+app.use('/api/parents', parentsRouter);
+app.use('/api/audit', auditRouter);
+app.use('/api/analytics', analyticsRouter);
 
 app.use(errorHandler);
 

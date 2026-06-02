@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
+import { Sentry, sentryEnabled } from '../instrument';
 
 export class AppError extends Error {
   constructor(
@@ -52,6 +53,8 @@ export function errorHandler(
     }
   }
 
+  // Unexpected (5xx) — report to Sentry if enabled, then return a safe message.
+  if (sentryEnabled) Sentry.captureException(err);
   console.error('[Unhandled Error]', err);
   res.status(500).json({ success: false, message: 'Internal server error' });
 }

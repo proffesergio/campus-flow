@@ -143,7 +143,17 @@ export async function getMyRecord(userId: string, schoolId: string) {
 
 export async function getMyDashboard(userId: string, schoolId: string) {
   const student = await getMyRecord(userId, schoolId);
+  return dashboardForStudent(student, schoolId);
+}
 
+/**
+ * Core dashboard aggregation for an already-resolved student record.
+ * Shared by the student self-service portal and the parent portal.
+ */
+export async function dashboardForStudent(
+  student: { id: string; classId: string },
+  schoolId: string,
+) {
   const now = new Date();
   const [attGroups, pendingFees, upcomingExams, recentGrades, classRankData] = await Promise.all([
     prisma.attendance.groupBy({

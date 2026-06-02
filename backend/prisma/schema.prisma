@@ -168,6 +168,30 @@ model School {
   inAppNotifications InAppNotification[]
   devices           Device[]
   practiceMaterials PracticeMaterial[]
+  auditLogs         AuditLog[]
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  schoolId   String
+  userId     String?
+  actorEmail String?
+  actorRole  String?
+  action     String   // CREATE | UPDATE | DELETE
+  entity     String   // resource group, e.g. "students", "classes"
+  entityId   String?
+  method     String
+  path       String
+  statusCode Int
+  ip         String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([schoolId, entity])
+  @@index([schoolId, createdAt])
 }
 
 model User {
@@ -201,6 +225,7 @@ model User {
   taughtClasses      Class[]            @relation("ClassTeacher")
   taughtSubjects     Subject[]          @relation("SubjectTeacher")
   studentProfile     Student?           @relation("StudentUser")
+  children           Student[]          @relation("ParentChildren")
 
   @@unique([schoolId, email])
   @@index([schoolId])
@@ -283,6 +308,7 @@ model Student {
   enrollmentDate   DateTime      @default(now())
   status           StudentStatus @default(active)
   userId           String?       @unique
+  parentId         String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -290,6 +316,7 @@ model Student {
   school  School  @relation(fields: [schoolId], references: [id])
   class   Class   @relation(fields: [classId], references: [id])
   user    User?   @relation("StudentUser", fields: [userId], references: [id])
+  parent  User?   @relation("ParentChildren", fields: [parentId], references: [id])
 
   attendances Attendance[]
   grades      Grade[]
@@ -298,6 +325,7 @@ model Student {
   @@unique([schoolId, classId, rollNumber])
   @@index([schoolId])
   @@index([schoolId, classId])
+  @@index([schoolId, parentId])
 }
 
 // ─── Phase 3: Attendance ──────────────────────────────────────────────────────

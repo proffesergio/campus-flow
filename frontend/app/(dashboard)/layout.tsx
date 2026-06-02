@@ -20,11 +20,13 @@ import {
   ChevronLeft,
   LogOut,
   Search,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import CommandPalette from '@/components/CommandPalette';
+import LanguageToggle from '@/components/LanguageToggle';
 
 const navGroups = [
   {
@@ -40,6 +42,7 @@ const navGroups = [
       { href: '/dashboard/attendance', label: 'Attendance', icon: ClipboardCheck },
       { href: '/dashboard/attendance/reports', label: 'Attendance Reports', icon: ClipboardCheck },
       { href: '/dashboard/exams', label: 'Exams & Grades', icon: BookOpen },
+      { href: '/dashboard/at-risk', label: 'At-Risk Students', icon: AlertTriangle },
     ],
   },
   {
@@ -262,6 +265,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           <div className="flex-1" />
+          <LanguageToggle />
           <div ref={bellRef} className="relative">
             <button
               onClick={() => setBellOpen((o) => !o)}

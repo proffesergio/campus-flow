@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import './instrument'; // must precede app import so Sentry instruments it
 import app from './app';
 import { env } from './config/env';
 import { prisma } from './config/prisma';

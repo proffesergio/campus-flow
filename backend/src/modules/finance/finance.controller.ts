@@ -104,6 +104,32 @@ export async function payCash(req: Request, res: Response, next: NextFunction) {
   } catch (err) { next(err); }
 }
 
+async function sendReceipt(res: Response, schoolId: string, paymentId: string) {
+  const pdf = await service.getPaymentReceiptPdf(schoolId, paymentId);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="receipt-${paymentId.slice(-8)}.pdf"`);
+  res.send(pdf);
+}
+
+/** GET /payments/:id/receipt — receipt for a specific payment. */
+export async function downloadReceipt(req: Request, res: Response, next: NextFunction) {
+  try {
+    await sendReceipt(res, req.tenant.schoolId, req.params.id);
+  } catch (err) { next(err); }
+}
+
+/** GET /invoices/:id/receipt — receipt for an invoice's latest successful payment. */
+export async function downloadInvoiceReceipt(req: Request, res: Response, next: NextFunction) {
+  try {
+    const paymentId = await service.latestPaymentIdForInvoice(req.tenant.schoolId, req.params.id);
+    if (!paymentId) {
+      res.status(404).json({ success: false, message: 'No payment found for this invoice' });
+      return;
+    }
+    await sendReceipt(res, req.tenant.schoolId, paymentId);
+  } catch (err) { next(err); }
+}
+
 export async function waive(req: Request, res: Response, next: NextFunction) {
   try {
     const result = await service.waiveInvoice(req.tenant.schoolId, req.params.id);

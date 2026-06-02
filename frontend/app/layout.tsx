@@ -1,9 +1,10 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { Toaster } from 'sonner';
+import PWARegister from '@/components/PWARegister';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -11,6 +12,12 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: { default: 'CampusFlow', template: '%s | CampusFlow' },
   description: 'Modern school management for Bangladesh and South Asia',
+  applicationName: 'CampusFlow',
+  appleWebApp: { capable: true, title: 'CampusFlow', statusBarStyle: 'black-translucent' },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#047857',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -32,6 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <NextIntlClientProvider messages={messages} locale={locale}>
             {children}
             <Toaster richColors position="top-right" theme="dark" />
+            <PWARegister />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

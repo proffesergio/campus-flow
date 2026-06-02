@@ -15,7 +15,11 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:push": "prisma db push",
+    "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.97.1",
@@ -23,6 +27,7 @@
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
     "@react-pdf/renderer": "^4.5.1",
+    "@sentry/node": "^8.55.2",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
