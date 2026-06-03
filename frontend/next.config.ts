@@ -26,9 +26,12 @@ const nextConfig: NextConfig = {
 // MIDDLEWARE_INVOCATION_FAILED at runtime when no DSN is set. Gating on the env
 // vars keeps the middleware clean in DSN-less deploys and auto-enables Sentry
 // the moment a DSN / auth token is provided.
+// Gate on the DSN ONLY (not SENTRY_AUTH_TOKEN). Sentry can't report without a
+// DSN, so wrapping on the auth token alone just injects edge middleware
+// instrumentation that throws MIDDLEWARE_INVOCATION_FAILED for no benefit. This
+// must stay consistent with the DSN gate in instrumentation.ts.
 const config = withNextIntl(nextConfig);
-const sentryEnabled =
-  !!process.env.NEXT_PUBLIC_SENTRY_DSN || !!process.env.SENTRY_AUTH_TOKEN;
+const sentryEnabled = !!process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 export default sentryEnabled
   ? withSentryConfig(config, {
