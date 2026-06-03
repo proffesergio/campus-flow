@@ -72,6 +72,7 @@ async function wipeDemoSchool() {
   await prisma.class.deleteMany({ where: { schoolId } });
   await prisma.refreshToken.deleteMany({ where: { schoolId } });
   await prisma.session.deleteMany({ where: { schoolId } });
+  await prisma.auditLog.deleteMany({ where: { schoolId } });
   await prisma.user.deleteMany({ where: { schoolId } });
   await prisma.school.delete({ where: { id: schoolId } });
 }

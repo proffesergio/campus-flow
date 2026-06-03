@@ -2,6 +2,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Prisma needs OpenSSL on Alpine (musl) to generate/load the query engine.
+RUN apk add --no-cache openssl libc6-compat
+
 # Install all deps (incl. dev) for prisma generate + tsc build
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -17,6 +20,9 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+
+# Runtime also needs OpenSSL so the Prisma query engine can load libssl.
+RUN apk add --no-cache openssl libc6-compat
 
 # Bring over installed deps (includes the generated Prisma client and the
 # prisma CLI used for `migrate deploy`), the compiled output, and the schema.
