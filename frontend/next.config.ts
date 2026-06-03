@@ -20,9 +20,21 @@ const nextConfig: NextConfig = {
 // Sentry wraps the config for error monitoring + (optional) source-map upload.
 // Source maps only upload when SENTRY_AUTH_TOKEN is present, so local/CI builds
 // work unchanged. Runtime error capture is gated on NEXT_PUBLIC_SENTRY_DSN.
-export default withSentryConfig(withNextIntl(nextConfig), {
-  silent: !process.env.CI,
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  disableLogger: true,
-});
+//
+// Only wrap when Sentry is actually configured: withSentryConfig injects edge
+// middleware instrumentation that, with @sentry/nextjs 8 + Next 15, throws
+// MIDDLEWARE_INVOCATION_FAILED at runtime when no DSN is set. Gating on the env
+// vars keeps the middleware clean in DSN-less deploys and auto-enables Sentry
+// the moment a DSN / auth token is provided.
+const config = withNextIntl(nextConfig);
+const sentryEnabled =
+  !!process.env.NEXT_PUBLIC_SENTRY_DSN || !!process.env.SENTRY_AUTH_TOKEN;
+
+export default sentryEnabled
+  ? withSentryConfig(config, {
+      silent: !process.env.CI,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      disableLogger: true,
+    })
+  : config;
