@@ -1,25 +1,15 @@
-// Sentry is fully optional and only loads when a DSN is configured. We avoid a
-// top-level `import @sentry/nextjs` on purpose: without withSentryConfig's
-// webpack plugin (which is itself gated on a DSN in next.config.ts), Sentry's
-// code is not edge-safe and throws `__dirname is not defined` when pulled into
-// the edge runtime. Lazy-loading behind the DSN check keeps the edge bundle
-// Sentry-free in DSN-less deploys.
-const SENTRY_ENABLED = !!process.env.NEXT_PUBLIC_SENTRY_DSN;
-
-export async function register() {
-  if (!SENTRY_ENABLED) return;
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    await import('./sentry.server.config');
-  }
-  if (process.env.NEXT_RUNTIME === 'edge') {
-    await import('./sentry.edge.config');
-  }
-}
-
-export async function onRequestError(
-  ...args: Parameters<typeof import('@sentry/nextjs').captureRequestError>
-) {
-  if (!SENTRY_ENABLED) return;
-  const Sentry = await import('@sentry/nextjs');
-  Sentry.captureRequestError(...args);
-}
+// Sentry is disabled in this deployment, and this file is intentionally free of
+// any @sentry/nextjs import.
+//
+// instrumentation.ts is loaded in the EDGE runtime too. @sentry/nextjs pulls in
+// @opentelemetry, which uses a dynamic `require(expression)` the Edge Runtime
+// cannot resolve. Even a dynamic import() guarded behind a runtime check still
+// gets emitted into the edge middleware bundle by webpack, which makes the
+// middleware edge function fail to initialize → MIDDLEWARE_INVOCATION_FAILED on
+// Vercel. Keeping this file import-free is the only reliable way to keep Sentry
+// out of the edge.
+//
+// To re-enable Sentry later, wire it back through withSentryConfig in
+// next.config.ts (it handles the edge/node split safely) and restore the
+// server/edge config imports there — not here.
+export function register() {}
