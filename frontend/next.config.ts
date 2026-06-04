@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
-import { withSentryConfig } from "@sentry/nextjs";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
@@ -16,27 +15,20 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Sentry wraps the config for error monitoring + (optional) source-map upload.
-// Source maps only upload when SENTRY_AUTH_TOKEN is present, so local/CI builds
-// work unchanged. Runtime error capture is gated on NEXT_PUBLIC_SENTRY_DSN.
+// Sentry is intentionally NOT wired into the build.
 //
-// Only wrap when Sentry is actually configured: withSentryConfig injects edge
-// middleware instrumentation that, with @sentry/nextjs 8 + Next 15, throws
-// MIDDLEWARE_INVOCATION_FAILED at runtime when no DSN is set. Gating on the env
-// vars keeps the middleware clean in DSN-less deploys and auto-enables Sentry
-// the moment a DSN / auth token is provided.
-// Gate on the DSN ONLY (not SENTRY_AUTH_TOKEN). Sentry can't report without a
-// DSN, so wrapping on the auth token alone just injects edge middleware
-// instrumentation that throws MIDDLEWARE_INVOCATION_FAILED for no benefit. This
-// must stay consistent with the DSN gate in instrumentation.ts.
-const config = withNextIntl(nextConfig);
-const sentryEnabled = !!process.env.NEXT_PUBLIC_SENTRY_DSN;
-
-export default sentryEnabled
-  ? withSentryConfig(config, {
-      silent: !process.env.CI,
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-      disableLogger: true,
-    })
-  : config;
+// withSentryConfig instruments the Edge middleware at build time. With
+// @sentry/nextjs 8 + Next 15 that injects Node-only code (`__dirname`) into the
+// edge bundle, so on Vercel the middleware throws
+// `ReferenceError: __dirname is not defined` → MIDDLEWARE_INVOCATION_FAILED (500
+// on every route). This fires whenever Sentry is active at build time —
+// including when a DSN/token is supplied by the Vercel Sentry integration, which
+// does NOT appear in the project's Environment Variables list. A DSN-gated wrap
+// is therefore not enough; the only reliable fix is to keep withSentryConfig out
+// of the build entirely. (Verified: without it the built middleware is ~33 kB
+// with zero `__dirname`/`@sentry` references.)
+//
+// To re-enable Sentry later: re-add withSentryConfig, upgrade @sentry/nextjs to
+// a version whose edge handling is fixed, and confirm `.next/server/middleware.js`
+// contains no `__dirname` before deploying.
+export default withNextIntl(nextConfig);
