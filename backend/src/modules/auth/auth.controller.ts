@@ -2,10 +2,16 @@ import { Request, Response, NextFunction } from "express";
 import * as authService from "./auth.service";
 import { registerSchoolSchema, loginSchema } from "./auth.validator";
 
+// In production the frontend (e.g. *.vercel.app / *.campusflow.app) and this API
+// (Render) are different sites, so the auth cookies are cross-site. Cross-site
+// cookies must be SameSite=None *and* Secure or the browser silently drops them
+// on every API call. In development (localhost:3000 -> localhost:3001 is same-site)
+// keep Strict, since None requires Secure which http://localhost can't satisfy.
+const isProd = process.env.NODE_ENV === "production";
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
+  secure: isProd,
+  sameSite: (isProd ? "none" : "strict") as "none" | "strict",
 };
 
 export async function registerSchool(

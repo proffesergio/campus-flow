@@ -29,6 +29,9 @@ const app = express();
 const allowedOrigins = [
   env.FRONTEND_URL,
   /\.campusflow\.app$/,
+  // Allow Vercel deployments (production alias + previews) while testing on the
+  // default *.vercel.app domain, before the real *.campusflow.app domain is wired up.
+  /\.vercel\.app$/,
   // Allow localhost in development
   ...(env.NODE_ENV === 'development' ? ['http://localhost:3000'] : []),
 ];

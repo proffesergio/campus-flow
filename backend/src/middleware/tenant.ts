@@ -26,8 +26,11 @@ export async function tenantMiddleware(
   // Extract slug from subdomain: dhaka-grammar.campusflow.app → dhaka-grammar
   if (host.endsWith(`.${env.APP_DOMAIN}`)) {
     slug = host.replace(`.${env.APP_DOMAIN}`, '');
-  } else if (env.NODE_ENV === 'development') {
-    // In dev, allow X-School-Slug header for testing without subdomain
+  } else {
+    // Fall back to the X-School-Slug header sent by the frontend. This is required
+    // whenever the API is reached on a host that isn't the tenant subdomain — e.g.
+    // a Render backend serving a Vercel frontend. It's safe: authenticate() rejects
+    // any token whose schoolId doesn't match this resolved tenant (see middleware/auth.ts).
     slug = (req.headers['x-school-slug'] as string) ?? null;
   }
 
