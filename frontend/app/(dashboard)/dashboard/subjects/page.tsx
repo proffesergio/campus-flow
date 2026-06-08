@@ -1,0 +1,268 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, BookOpen, Pencil, Trash2, Loader2, Library } from 'lucide-react';
+import { toast } from 'sonner';
+import { api } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
+
+interface ClassRow { id: string; name: string; section: string | null }
+interface Subject {
+  id: string;
+  name: string;
+  code: string | null;
+  creditHours: number | null;
+  teacher: { firstName: string; lastName: string } | null;
+  _count: { exams: number };
+}
+
+interface FormState { id?: string; name: string; code: string; creditHours: string }
+const emptyForm = (): FormState => ({ name: '', code: '', creditHours: '' });
+
+function classLabel(c: ClassRow) {
+  return `${c.name}${c.section ? ` – ${c.section}` : ''}`;
+}
+
+export default function SubjectsPage() {
+  const [classes, setClasses] = useState<ClassRow[]>([]);
+  const [classId, setClassId] = useState('');
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<FormState>(emptyForm());
+
+  useEffect(() => {
+    api.get<{ success: boolean; data: ClassRow[] }>('/classes')
+      .then((r) => {
+        const list = r.data.data ?? [];
+        setClasses(list);
+        if (list.length > 0) setClassId(list[0].id);
+      })
+      .catch(() => toast.error('Failed to load classes'))
+      .finally(() => setLoadingClasses(false));
+  }, []);
+
+  const fetchSubjects = useCallback(async () => {
+    if (!classId) { setSubjects([]); return; }
+    setLoadingSubjects(true);
+    try {
+      const res = await api.get<{ success: boolean; data: Subject[] }>(`/exams/subjects?classId=${classId}`);
+      setSubjects(res.data.data ?? []);
+    } catch {
+      toast.error('Failed to load subjects');
+    } finally {
+      setLoadingSubjects(false);
+    }
+  }, [classId]);
+
+  useEffect(() => { fetchSubjects(); }, [fetchSubjects]);
+
+  function openCreate() { setForm(emptyForm()); setOpen(true); }
+  function openEdit(s: Subject) {
+    setForm({ id: s.id, name: s.name, code: s.code ?? '', creditHours: s.creditHours != null ? String(s.creditHours) : '' });
+    setOpen(true);
+  }
+
+  async function handleSave() {
+    if (!classId) { toast.error('Select a class first'); return; }
+    if (!form.name.trim()) { toast.error('Subject name is required'); return; }
+    setSaving(true);
+    const base = {
+      name: form.name.trim(),
+      code: form.code.trim() || undefined,
+      creditHours: form.creditHours ? Number(form.creditHours) : undefined,
+    };
+    try {
+      if (form.id) {
+        await api.put(`/exams/subjects/${form.id}`, base);
+        toast.success('Subject updated');
+      } else {
+        await api.post('/exams/subjects', { ...base, classId });
+        toast.success('Subject created');
+      }
+      setOpen(false);
+      fetchSubjects();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? 'Something went wrong');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(s: Subject) {
+    if (!confirm(`Delete subject "${s.name}"? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/exams/subjects/${s.id}`);
+      toast.success('Subject deleted');
+      fetchSubjects();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? 'Failed to delete subject');
+    }
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Subjects</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">Manage subjects for each class</p>
+        </div>
+        <Button onClick={openCreate} disabled={!classId} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+          <Plus className="w-4 h-4" /> Add Subject
+        </Button>
+      </div>
+
+      {/* Class selector */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <Label className="text-zinc-400">Class</Label>
+        {loadingClasses ? (
+          <Skeleton className="h-10 w-48 bg-zinc-800" />
+        ) : classes.length === 0 ? (
+          <p className="text-sm text-zinc-500">
+            No classes yet — create one on the <a href="/dashboard/classes" className="text-blue-400 hover:underline">Classes</a> page first.
+          </p>
+        ) : (
+          <select
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            className="h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white min-w-48"
+          >
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>{classLabel(c)}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* Subjects grid */}
+      {loadingSubjects ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 bg-zinc-900 rounded-xl" />
+          ))}
+        </div>
+      ) : !classId ? null : subjects.length === 0 ? (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl py-16 text-center">
+          <Library className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
+          <p className="text-zinc-400 font-medium">No subjects for this class</p>
+          <p className="text-zinc-600 text-sm mt-1">Add subjects so they appear in exams and practice materials.</p>
+          <Button onClick={openCreate} className="mt-4 bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <Plus className="w-4 h-4" /> Add subject
+          </Button>
+        </div>
+      ) : (
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          {subjects.map((s) => (
+            <motion.div
+              key={s.id}
+              variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+              whileHover={{ y: -2 }}
+              className="group bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-purple-600/15 flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-white truncate">{s.name}</p>
+                    <p className="text-xs text-zinc-500">
+                      {s.code ? s.code : 'No code'}{s.creditHours != null ? ` · ${s.creditHours} cr` : ''}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => openEdit(s)}
+                    className="p-1.5 rounded text-zinc-400 hover:text-blue-400 hover:bg-zinc-800 transition-colors">
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => handleDelete(s)}
+                    className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              {s._count.exams > 0 && (
+                <p className="text-xs text-zinc-600 mt-3">{s._count.exams} exam{s._count.exams === 1 ? '' : 's'}</p>
+              )}
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
+
+      {/* Create / Edit dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <AnimatePresence>
+          {open && (
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="text-white">{form.id ? 'Edit Subject' : 'Add Subject'}</DialogTitle>
+                <DialogDescription>
+                  {form.id ? 'Update the subject details.' : `Add a subject to ${classes.find((c) => c.id === classId) ? classLabel(classes.find((c) => c.id === classId)!) : 'this class'}.`}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Subject Name *</Label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="e.g. Mathematics"
+                    autoFocus
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Code</Label>
+                    <Input
+                      value={form.code}
+                      onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+                      placeholder="e.g. MATH"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Credit Hours</Label>
+                    <Input
+                      type="number"
+                      value={form.creditHours}
+                      onChange={(e) => setForm((f) => ({ ...f, creditHours: e.target.value }))}
+                      placeholder="e.g. 4"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving} className="text-zinc-400">
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {form.id ? 'Save Changes' : 'Create Subject'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          )}
+        </AnimatePresence>
+      </Dialog>
+    </div>
+  );
+}

@@ -115,4 +115,30 @@ router.post('/logout', controller.logout);
  */
 router.get('/me', authenticate, controller.me);
 
+/**
+ * @openapi
+ * /api/auth/me:
+ *   put:
+ *     tags: [Auth]
+ *     summary: Update the current user's own profile
+ *     responses:
+ *       200:
+ *         description: Updated profile
+ */
+router.put('/me', authenticate, controller.updateMe);
+
+/**
+ * @openapi
+ * /api/auth/change-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Change the current user's password
+ *     responses:
+ *       200:
+ *         description: Password changed
+ *       400:
+ *         description: Current password incorrect
+ */
+router.post('/change-password', authenticate, controller.changePassword);
+
 export default router;

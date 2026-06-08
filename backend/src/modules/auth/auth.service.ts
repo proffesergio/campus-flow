@@ -4,7 +4,12 @@ import crypto from 'crypto';
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
 import { AppError } from '../../middleware/errorHandler';
-import type { RegisterSchoolInput, LoginInput } from './auth.validator';
+import type {
+  RegisterSchoolInput,
+  LoginInput,
+  UpdateProfileInput,
+  ChangePasswordInput,
+} from './auth.validator';
 
 const SALT_ROUNDS = 12;
 
@@ -65,6 +70,28 @@ export async function registerSchool(data: RegisterSchoolInput) {
       { schoolId: school.id, minPercent: 0, maxPercent: 39.99, label: 'F', color: '#991b1b' },
     ],
   });
+
+  // Seed a starter set of classes + subjects so a brand-new school is usable right
+  // away (the Add Student / Exam / Practice dropdowns need these). The admin can
+  // rename, delete, or add to these from the Classes & Subjects pages.
+  const academicYear = String(new Date().getFullYear());
+  const defaultSubjects = [
+    'Bangla',
+    'English',
+    'Mathematics',
+    'Science',
+    'Social Science',
+    'Religion & Moral Education',
+    'ICT',
+  ];
+  for (let grade = 1; grade <= 10; grade++) {
+    const cls = await prisma.class.create({
+      data: { schoolId: school.id, name: `Class ${grade}`, academicYear },
+    });
+    await prisma.subject.createMany({
+      data: defaultSubjects.map((name) => ({ schoolId: school.id, classId: cls.id, name })),
+    });
+  }
 
   return { school, admin: school.users[0] };
 }
@@ -264,4 +291,34 @@ export async function getMe(userId: string, schoolId: string) {
   if (!user || !school) throw new AppError(404, 'User or school not found');
 
   return { user, school };
+}
+
+export async function updateProfile(userId: string, data: UpdateProfileInput) {
+  return prisma.user.update({
+    where: { id: userId },
+    data,
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      phone: true,
+      photoUrl: true,
+    },
+  });
+}
+
+export async function changePassword(userId: string, data: ChangePasswordInput) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError(404, 'User not found');
+
+  const valid = await bcrypt.compare(data.currentPassword, user.passwordHash);
+  if (!valid) throw new AppError(400, 'Current password is incorrect');
+
+  const passwordHash = await bcrypt.hash(data.newPassword, SALT_ROUNDS);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+  // Invalidate other sessions by revoking refresh tokens for this user.
+  await prisma.refreshToken.deleteMany({ where: { userId } });
 }

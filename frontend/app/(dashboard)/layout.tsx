@@ -13,6 +13,8 @@ import {
   Bell,
   Bot,
   BookMarked,
+  Layers,
+  Library,
   Settings,
   Menu,
   X,
@@ -21,6 +23,7 @@ import {
   LogOut,
   Search,
   AlertTriangle,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -40,6 +43,8 @@ const navGroups = [
     label: 'Academics',
     items: [
       { href: '/dashboard/students', label: 'Students', icon: Users },
+      { href: '/dashboard/classes', label: 'Classes', icon: Layers },
+      { href: '/dashboard/subjects', label: 'Subjects', icon: Library },
       { href: '/dashboard/attendance', label: 'Attendance', icon: ClipboardCheck },
       { href: '/dashboard/attendance/reports', label: 'Attendance Reports', icon: ClipboardCheck },
       { href: '/dashboard/exams', label: 'Exams & Grades', icon: BookOpen },
@@ -72,6 +77,20 @@ interface InboxData {
   items: { id: string; title: string; body: string; isRead: boolean; createdAt: string; link?: string }[];
 }
 
+interface CurrentUser {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+}
+
+const ROLE_LABEL: Record<string, string> = {
+  super_admin: 'Super Admin',
+  school_admin: 'School Admin',
+  teacher: 'Teacher',
+  finance: 'Finance',
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -80,6 +99,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [inbox, setInbox] = useState<InboxData>({ unread: 0, items: [] });
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
+  const [me, setMe] = useState<CurrentUser | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const fetchInbox = useCallback(async () => {
     try {
@@ -95,9 +117,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [fetchInbox]);
 
   useEffect(() => {
+    api.get<{ success: boolean; data: { user: CurrentUser } }>('/auth/me')
+      .then((r) => setMe(r.data.data.user))
+      .catch(() => { /* silent */ });
+  }, []);
+
+  useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
         setBellOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
@@ -330,8 +361,60 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             )}
           </div>
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-            U
+          <div ref={profileRef} className="relative">
+            <button
+              onClick={() => setProfileOpen((o) => !o)}
+              className="flex items-center gap-2 rounded-full hover:bg-zinc-800 p-0.5 pr-2 transition-colors"
+            >
+              <span className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-medium">
+                {me ? `${me.firstName[0] ?? ''}${me.lastName[0] ?? ''}`.toUpperCase() : 'U'}
+              </span>
+              {me && <span className="hidden sm:block text-sm text-zinc-300 max-w-[8rem] truncate">{me.firstName}</span>}
+            </button>
+
+            <AnimatePresence>
+              {profileOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-11 w-56 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden"
+                >
+                  {me && (
+                    <div className="px-4 py-3 border-b border-zinc-800">
+                      <p className="text-sm font-semibold text-white truncate">{me.firstName} {me.lastName}</p>
+                      <p className="text-xs text-zinc-500 truncate">{me.email}</p>
+                      <span className="inline-block mt-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        {ROLE_LABEL[me.role] ?? me.role}
+                      </span>
+                    </div>
+                  )}
+                  <div className="p-1">
+                    <Link
+                      href="/dashboard/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    >
+                      <User className="w-4 h-4 text-zinc-400" /> My Profile
+                    </Link>
+                    <Link
+                      href="/dashboard/settings"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-zinc-400" /> Settings
+                    </Link>
+                    <button
+                      onClick={() => { setProfileOpen(false); handleLogout(); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" /> Logout
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </header>
 

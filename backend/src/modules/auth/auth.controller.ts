@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "./auth.service";
-import { registerSchoolSchema, loginSchema } from "./auth.validator";
+import {
+  registerSchoolSchema,
+  loginSchema,
+  updateProfileSchema,
+  changePasswordSchema,
+} from "./auth.validator";
 
 // In production the frontend (e.g. *.vercel.app / *.campusflow.app) and this API
 // (Render) are different sites, so the auth cookies are cross-site. Cross-site
@@ -115,6 +120,26 @@ export async function me(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await authService.getMe(req.user.userId, req.user.schoolId);
     res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateMe(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = updateProfileSchema.parse(req.body);
+    const user = await authService.updateProfile(req.user.userId, data);
+    res.json({ success: true, message: "Profile updated", data: user });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function changePassword(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = changePasswordSchema.parse(req.body);
+    await authService.changePassword(req.user.userId, data);
+    res.json({ success: true, message: "Password changed successfully" });
   } catch (err) {
     next(err);
   }
