@@ -59,6 +59,14 @@ export default function ClassesPage() {
 
   useEffect(() => { fetchClasses(); }, [fetchClasses]);
 
+  // Auto-open the create dialog when arrived via the +New quick-add (?new=1).
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('new') === '1') {
+      setForm(emptyForm());
+      setOpen(true);
+    }
+  }, []);
+
   function openCreate() { setForm(emptyForm()); setOpen(true); }
   function openEdit(c: ClassRow) {
     setForm({

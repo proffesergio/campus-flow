@@ -66,6 +66,14 @@ export default function SubjectsPage() {
 
   useEffect(() => { fetchSubjects(); }, [fetchSubjects]);
 
+  // Auto-open the create dialog when arrived via the +New quick-add (?new=1).
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('new') === '1') {
+      setForm(emptyForm());
+      setOpen(true);
+    }
+  }, []);
+
   function openCreate() { setForm(emptyForm()); setOpen(true); }
   function openEdit(s: Subject) {
     setForm({ id: s.id, name: s.name, code: s.code ?? '', creditHours: s.creditHours != null ? String(s.creditHours) : '' });

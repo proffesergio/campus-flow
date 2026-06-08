@@ -31,6 +31,7 @@ import { clearRoleCookie } from '@/lib/session';
 import { toast } from 'sonner';
 import CommandPalette from '@/components/CommandPalette';
 import LanguageToggle from '@/components/LanguageToggle';
+import QuickAddMenu from '@/components/dashboard/QuickAddMenu';
 
 const navGroups = [
   {
@@ -298,6 +299,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           <div className="flex-1" />
+          <QuickAddMenu />
           <LanguageToggle />
           <div ref={bellRef} className="relative">
             <button

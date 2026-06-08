@@ -1,4 +1,9 @@
 import { prisma } from '../../config/prisma';
+import {
+  bucketGradeDistribution,
+  buildAttendanceTrend,
+  MonthAttendance,
+} from './analytics.helpers';
 
 export interface AtRiskOptions {
   attendanceThreshold?: number; // percent below which attendance is a concern
@@ -114,5 +119,60 @@ export async function getAtRiskStudents(schoolId: string, opts: AtRiskOptions = 
       medium: items.filter((i) => i.level === 'medium').length,
     },
     thresholds: { attendanceThreshold, gradeThreshold, windowDays },
+  };
+}
+
+function sixMonthsAgo(): Date {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 6);
+  return d;
+}
+
+/**
+ * Aggregate data for the dashboard home: onboarding completion counts, grade
+ * distribution across the school's grade thresholds, and a 6-month attendance
+ * trend. All scoped to one school.
+ */
+export async function getDashboardSummary(schoolId: string) {
+  const [classes, subjects, students, exams, thresholds, grades, attendance] = await Promise.all([
+    prisma.class.count({ where: { schoolId } }),
+    prisma.subject.count({ where: { schoolId } }),
+    prisma.student.count({ where: { schoolId, status: 'active' } }),
+    prisma.exam.count({ where: { schoolId } }),
+    prisma.gradeThreshold.findMany({
+      where: { schoolId },
+      orderBy: { minPercent: 'desc' },
+      select: { label: true, minPercent: true, maxPercent: true, color: true },
+    }),
+    prisma.grade.findMany({
+      where: { schoolId, isAbsent: false, marksObtained: { not: null } },
+      select: { marksObtained: true, exam: { select: { totalMarks: true } } },
+    }),
+    prisma.attendance.findMany({
+      where: { schoolId, date: { gte: sixMonthsAgo() } },
+      select: { date: true, status: true },
+    }),
+  ]);
+
+  const percentages = grades
+    .filter((g) => g.marksObtained != null && g.exam.totalMarks > 0)
+    .map((g) => (g.marksObtained! / g.exam.totalMarks) * 100);
+
+  const monthMap = new Map<string, { present: number; total: number }>();
+  for (const a of attendance) {
+    const key = a.date.toISOString().slice(0, 7); // YYYY-MM
+    const m = monthMap.get(key) ?? { present: 0, total: 0 };
+    m.total += 1;
+    if (a.status === 'present' || a.status === 'late') m.present += 1;
+    monthMap.set(key, m);
+  }
+  const attendanceRows: MonthAttendance[] = [...monthMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, v]) => ({ month, present: v.present, total: v.total }));
+
+  return {
+    onboarding: { classes, subjects, students, exams },
+    gradeDistribution: bucketGradeDistribution(percentages, thresholds),
+    attendanceTrend: buildAttendanceTrend(attendanceRows),
   };
 }

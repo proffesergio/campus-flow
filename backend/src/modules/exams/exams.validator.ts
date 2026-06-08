@@ -46,6 +46,7 @@ export const examListQuerySchema = z.object({
   examType: z
     .enum(['midterm', 'final', 'quiz', 'assignment', 'class_test'])
     .optional(),
+  upcoming: z.coerce.boolean().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
