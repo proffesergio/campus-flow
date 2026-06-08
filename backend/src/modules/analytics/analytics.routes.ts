@@ -22,4 +22,22 @@ router.get(
   controller.atRisk,
 );
 
+/**
+ * @openapi
+ * /api/analytics/dashboard-summary:
+ *   get:
+ *     tags: [Analytics]
+ *     summary: Onboarding counts, grade distribution, and 6-month attendance trend
+ *     parameters:
+ *       - $ref: '#/components/parameters/SchoolSlug'
+ *     responses:
+ *       200: { description: "{ onboarding, gradeDistribution, attendanceTrend }" }
+ */
+router.get(
+  '/dashboard-summary',
+  authenticate,
+  requireRole('school_admin', 'super_admin'),
+  controller.dashboardSummary,
+);
+
 export default router;
