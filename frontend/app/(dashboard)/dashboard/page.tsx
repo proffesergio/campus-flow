@@ -55,7 +55,7 @@ export default function DashboardPage() {
       }
       if (students.status === 'fulfilled') {
         const st = students.value.data.data;
-        setKpi((k) => ({ ...k, students: { total: st.total, thisMonth: st.thisMonth } }));
+        setKpi((k) => ({ ...k, students: { total: st.active ?? st.total, thisMonth: st.thisMonth } }));
       }
       if (finance.status === 'fulfilled') {
         const f = finance.value.data.data;
@@ -63,15 +63,16 @@ export default function DashboardPage() {
         setKpi((k) => ({ ...k, feesCollected: f.totalCollected, feesThisMonth: f.collectedThisMonth }));
       }
       if (exams.status === 'fulfilled') {
-        const list = exams.value.data.data ?? [];
+        const list = exams.value.data.items ?? exams.value.data.data ?? [];
         const next = list[0];
         setKpi((k) => ({ ...k, upcomingExams: list.length, nextExamLabel: next ? `next: ${next.subject?.name ?? next.name}` : undefined }));
       }
       if (risk.status === 'fulfilled') setAtRisk(risk.value.data.items ?? []);
       if (audit.status === 'fulfilled') {
         const rows = audit.value.data.items ?? audit.value.data.data ?? [];
-        setActivity(rows.map((r: { id: string; action: string; entity: string; createdAt: string; user?: { firstName: string } }) => ({
-          id: r.id, action: r.action, entity: r.entity, createdAt: r.createdAt, actorName: r.user?.firstName,
+        setActivity(rows.map((r: { id: string; action: string; entity: string; createdAt: string; actorEmail?: string }) => ({
+          id: r.id, action: r.action, entity: r.entity, createdAt: r.createdAt,
+          actorName: r.actorEmail ? r.actorEmail.split('@')[0] : undefined,
         })));
       }
     });

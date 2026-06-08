@@ -95,7 +95,7 @@ export async function deleteSubject(schoolId: string, id: string) {
 // ── Exams ─────────────────────────────────────────────────────────────────────
 
 export async function listExams(schoolId: string, query: ExamListQuery) {
-  const { classId, subjectId, term, examType, page, limit } = query;
+  const { classId, subjectId, term, examType, upcoming, page, limit } = query;
   const skip = (page - 1) * limit;
 
   const where = {
@@ -104,6 +104,8 @@ export async function listExams(schoolId: string, query: ExamListQuery) {
     ...(subjectId ? { subjectId } : {}),
     ...(term ? { term } : {}),
     ...(examType ? { examType } : {}),
+    // Upcoming = exams dated today or later, shown soonest-first.
+    ...(upcoming ? { examDate: { gte: new Date() } } : {}),
   };
 
   const [items, total] = await Promise.all([
@@ -115,7 +117,7 @@ export async function listExams(schoolId: string, query: ExamListQuery) {
         createdBy: { select: { firstName: true, lastName: true } },
         _count: { select: { grades: true } },
       },
-      orderBy: [{ examDate: 'desc' }],
+      orderBy: [{ examDate: upcoming ? 'asc' : 'desc' }],
       skip,
       take: limit,
     }),
