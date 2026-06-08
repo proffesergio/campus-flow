@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Bell, GraduationCap, Menu, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { clearRoleCookie } from '@/lib/session';
 import { toast } from 'sonner';
 import LanguageToggle from '@/components/LanguageToggle';
 
@@ -31,6 +32,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   async function handleLogout() {
     try {
       await api.post('/auth/logout');
+      clearRoleCookie();
       router.push('/login');
     } catch {
       toast.error('Failed to logout');

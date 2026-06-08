@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { setRoleCookie } from '@/lib/session';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -62,6 +63,7 @@ function LoginForm() {
       }>('/auth/login', data);
       localStorage.setItem('campusflow_slug', res.data.data.schoolSlug);
       const { role } = res.data.data.user;
+      setRoleCookie(role);
       const redirect = searchParams.get('redirect');
       if (redirect) { router.push(redirect); return; }
       switch (role) {

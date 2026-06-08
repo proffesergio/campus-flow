@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { clearRoleCookie } from '@/lib/session';
 import { toast } from 'sonner';
 import CommandPalette from '@/components/CommandPalette';
 import LanguageToggle from '@/components/LanguageToggle';
@@ -117,6 +118,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   async function handleLogout() {
     try {
       await api.post('/auth/logout');
+      clearRoleCookie();
       router.push('/login');
     } catch {
       toast.error('Failed to logout');

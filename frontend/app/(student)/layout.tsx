@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { clearRoleCookie } from '@/lib/session';
 import { toast } from 'sonner';
 
 const navItems = [
@@ -59,6 +60,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   async function handleLogout() {
     try {
       await api.post('/auth/logout');
+      clearRoleCookie();
       router.push('/login');
     } catch {
       toast.error('Failed to logout');

@@ -20,20 +20,6 @@ function roleHome(role: Role): string {
   return ROLE_HOME[role] ?? '/dashboard';
 }
 
-// Decode the JWT payload WITHOUT verifying the signature. This is for edge-side routing only —
-// every API request is still cryptographically verified by the backend (see backend/src/middleware/auth.ts).
-function decodeRole(token: string): Role | null {
-  try {
-    const payload = token.split('.')[1];
-    if (!payload) return null;
-    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const json = JSON.parse(atob(base64)) as { role?: Role };
-    return json.role ?? null;
-  } catch {
-    return null;
-  }
-}
-
 function isAllowed(role: Role, pathname: string): boolean {
   if (role === 'super_admin') return true;
 
@@ -64,24 +50,26 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const accessToken = req.cookies.get('access_token')?.value;
+  // Role for UX routing comes from the `cf_role` cookie set on THIS (frontend) domain
+  // at login. The real auth credential is an httpOnly cookie on the API's own domain,
+  // which this edge middleware cannot read in a split frontend/backend deployment.
+  // This is routing only — security is enforced server-side: every API request verifies
+  // the JWT (see backend/src/middleware/auth.ts).
+  const role = req.cookies.get('cf_role')?.value as Role | undefined;
 
-  if (!accessToken) {
+  if (!role) {
     const loginUrl = new URL('/login', req.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // ── Role-based routing ─────────────────────────────────────────────────────
-  const role = decodeRole(accessToken);
-  if (role) {
-    // Teachers/finance landing on the bare dashboard go to their own home.
-    if (pathname === '/dashboard' && (role === 'teacher' || role === 'finance')) {
-      return NextResponse.redirect(new URL(roleHome(role), req.url));
-    }
-    if (!isAllowed(role, pathname)) {
-      return NextResponse.redirect(new URL(roleHome(role), req.url));
-    }
+  // Teachers/finance landing on the bare dashboard go to their own home.
+  if (pathname === '/dashboard' && (role === 'teacher' || role === 'finance')) {
+    return NextResponse.redirect(new URL(roleHome(role), req.url));
+  }
+  if (!isAllowed(role, pathname)) {
+    return NextResponse.redirect(new URL(roleHome(role), req.url));
   }
 
   // Inject school slug from subdomain into a header for server components
