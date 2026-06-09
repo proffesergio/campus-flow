@@ -91,13 +91,17 @@ export default function StudentsPage() {
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
+    // Selection only applies to the visible page; clear it whenever the list reloads
+    // (filter/page change or a post-action refetch) so bulk ops never hit off-screen rows.
+    setSelectedIds(new Set());
     try {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (search) params.set('search', search);
       if (classFilter) params.set('classId', classFilter);
       if (statusFilter) params.set('status', statusFilter);
-      const res = await api.get<{ success: boolean; data: Student[]; meta: Meta }>(`/students?${params}`);
-      setStudents(res.data.data ?? []);
+      // /students returns { success, items, meta } — items, not data.
+      const res = await api.get<{ success: boolean; items: Student[]; meta: Meta }>(`/students?${params}`);
+      setStudents(res.data.items ?? []);
       setMeta(res.data.meta);
     } catch { toast.error('Failed to load students'); }
     finally { setLoading(false); }

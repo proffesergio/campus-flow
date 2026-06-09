@@ -137,8 +137,10 @@ export async function notifyStudents(
     where: { id: { in: input.studentIds }, schoolId, status: 'active' },
     select: { id: true, firstName: true, lastName: true, guardianEmail: true, guardianPhone: true, userId: true },
   });
-  const recipients: Recipient[] = students.map((s) => ({
-    userId: s.userId ?? s.id,
+  // userId is the student's portal account (or null). It must NOT fall back to the
+  // student id — InAppNotification.userId is a hard FK to User, so a non-user id 500s.
+  const recipients = students.map((s) => ({
+    userId: s.userId as string | null,
     email: s.guardianEmail,
     phone: s.guardianPhone,
     name: `${s.firstName} ${s.lastName} Guardian`,
@@ -154,8 +156,11 @@ export async function notifyStudents(
     for (const channel of input.channels) {
       let ok = false;
       if (channel === 'in_app') {
-        await createInAppNotification({ schoolId, userId: recipient.userId, title: subject, body, type: 'broadcast' });
-        ok = true;
+        // Only deliverable to recipients that have a portal user account.
+        if (recipient.userId) {
+          await createInAppNotification({ schoolId, userId: recipient.userId, title: subject, body, type: 'broadcast' });
+          ok = true;
+        }
       } else if (channel === 'email' && recipient.email) {
         const { Resend } = await import('resend');
         const { env } = await import('../../config/env');
@@ -170,7 +175,7 @@ export async function notifyStudents(
       }
 
       await logNotification({
-        schoolId, senderId, recipientId: recipient.userId,
+        schoolId, senderId, recipientId: recipient.userId ?? undefined,
         type: 'broadcast', channel: channel as 'email' | 'sms' | 'in_app',
         subject, body, status: ok ? 'sent' : 'failed',
       });

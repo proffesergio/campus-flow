@@ -21,8 +21,11 @@ export function downloadCsv(filename: string, csv: string): void {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  // Defer revoke so Firefox/Safari can finish fetching the blob before it's freed.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export interface ParsedCsv { headers: string[]; rows: Record<string, string>[] }
