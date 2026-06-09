@@ -3,16 +3,42 @@
     "dashboard": "Dashboard",
     "students": "Students",
     "classes": "Classes",
+    "subjects": "Subjects",
     "attendance": "Attendance",
-    "exams": "Exams",
-    "grades": "Grades",
+    "attendanceReports": "Attendance Reports",
+    "exams": "Exams & Grades",
+    "atRisk": "At-Risk Students",
     "finance": "Finance",
     "notifications": "Notifications",
     "aiAssistant": "AI Assistant",
-    "practice": "Practice",
+    "practice": "Practice Materials",
     "settings": "Settings",
     "logout": "Logout",
-    "profile": "Profile"
+    "profile": "Profile",
+    "groups": {
+      "overview": "Overview",
+      "academics": "Academics",
+      "finance": "Finance",
+      "communication": "Communication",
+      "aiTools": "AI Tools"
+    },
+    "profileMenu": {
+      "myProfile": "My Profile",
+      "settings": "Settings",
+      "logout": "Logout"
+    },
+    "roles": {
+      "super_admin": "Super Admin",
+      "school_admin": "School Admin",
+      "teacher": "Teacher",
+      "finance": "Finance"
+    },
+    "search": "Search…",
+    "notificationsTitle": "Notifications",
+    "markAllRead": "Mark all read",
+    "viewAllNotifications": "View all notifications",
+    "noNotifications": "No notifications",
+    "new": "New"
   },
   "auth": {
     "login": "Sign In",
@@ -44,7 +70,21 @@
     "of": "of",
     "perPage": "Per page",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "back": "Back",
+    "create": "Create",
+    "update": "Update",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "view": "View",
+    "viewAll": "View All",
+    "all": "All",
+    "none": "None",
+    "required": "Required",
+    "optional": "Optional",
+    "export": "Export",
+    "import": "Import"
   },
   "status": {
     "active": "Active",
@@ -59,7 +99,9 @@
     "paid": "Paid",
     "partial": "Partial",
     "overdue": "Overdue",
-    "waived": "Waived"
+    "waived": "Waived",
+    "published": "Published",
+    "draft": "Draft"
   },
   "students": {
     "title": "Students",

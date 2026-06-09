@@ -3,16 +3,42 @@
     "dashboard": "ড্যাশবোর্ড",
     "students": "শিক্ষার্থী",
     "classes": "শ্রেণী",
+    "subjects": "বিষয়সমূহ",
     "attendance": "উপস্থিতি",
-    "exams": "পরীক্ষা",
-    "grades": "নম্বর",
+    "attendanceReports": "উপস্থিতির প্রতিবেদন",
+    "exams": "পরীক্ষা ও নম্বর",
+    "atRisk": "ঝুঁকিতে থাকা শিক্ষার্থী",
     "finance": "অর্থ ব্যবস্থাপনা",
     "notifications": "বিজ্ঞপ্তি",
     "aiAssistant": "এআই সহকারী",
-    "practice": "অনুশীলন",
+    "practice": "অনুশীলন সামগ্রী",
     "settings": "সেটিংস",
     "logout": "লগআউট",
-    "profile": "প্রোফাইল"
+    "profile": "প্রোফাইল",
+    "groups": {
+      "overview": "সংক্ষিপ্ত বিবরণ",
+      "academics": "শিক্ষা কার্যক্রম",
+      "finance": "অর্থ ব্যবস্থাপনা",
+      "communication": "যোগাযোগ",
+      "aiTools": "এআই টুলস"
+    },
+    "profileMenu": {
+      "myProfile": "আমার প্রোফাইল",
+      "settings": "সেটিংস",
+      "logout": "লগআউট"
+    },
+    "roles": {
+      "super_admin": "সুপার অ্যাডমিন",
+      "school_admin": "স্কুল অ্যাডমিন",
+      "teacher": "শিক্ষক",
+      "finance": "অর্থ বিভাগ"
+    },
+    "search": "অনুসন্ধান করুন…",
+    "notificationsTitle": "বিজ্ঞপ্তি",
+    "markAllRead": "সব পঠিত চিহ্নিত করুন",
+    "viewAllNotifications": "সব বিজ্ঞপ্তি দেখুন",
+    "noNotifications": "কোনো বিজ্ঞপ্তি নেই",
+    "new": "নতুন"
   },
   "auth": {
     "login": "সাইন ইন",
@@ -33,7 +59,7 @@
     "search": "অনুসন্ধান",
     "filter": "ফিল্টার",
     "loading": "লোড হচ্ছে...",
-    "noData": "কোন তথ্য পাওয়া যায়নি",
+    "noData": "কোনো তথ্য পাওয়া যায়নি",
     "confirm": "নিশ্চিত করুন",
     "actions": "কার্যক্রম",
     "status": "অবস্থা",
@@ -44,7 +70,21 @@
     "of": "এর মধ্যে",
     "perPage": "প্রতি পৃষ্ঠায়",
     "previous": "পূর্ববর্তী",
-    "next": "পরবর্তী"
+    "next": "পরবর্তী",
+    "back": "পিছনে",
+    "create": "তৈরি করুন",
+    "update": "আপডেট করুন",
+    "close": "বন্ধ করুন",
+    "yes": "হ্যাঁ",
+    "no": "না",
+    "view": "দেখুন",
+    "viewAll": "সব দেখুন",
+    "all": "সব",
+    "none": "কোনোটি নয়",
+    "required": "আবশ্যিক",
+    "optional": "ঐচ্ছিক",
+    "export": "রপ্তানি করুন",
+    "import": "আমদানি করুন"
   },
   "status": {
     "active": "সক্রিয়",
@@ -59,7 +99,9 @@
     "paid": "পরিশোধিত",
     "partial": "আংশিক",
     "overdue": "মেয়াদোত্তীর্ণ",
-    "waived": "মওকুফ"
+    "waived": "মওকুফ",
+    "published": "প্রকাশিত",
+    "draft": "খসড়া"
   },
   "students": {
     "title": "শিক্ষার্থী",
@@ -81,7 +123,7 @@
     "address": "ঠিকানা",
     "enrollmentDate": "ভর্তির তারিখ",
     "createPortalAccess": "শিক্ষার্থী পোর্টাল অ্যাকাউন্ট তৈরি করুন",
-    "noStudents": "কোন শিক্ষার্থী পাওয়া যায়নি। প্রথম শিক্ষার্থী যোগ করুন।"
+    "noStudents": "কোনো শিক্ষার্থী পাওয়া যায়নি। প্রথম শিক্ষার্থী যোগ করুন।"
   },
   "attendance": {
     "title": "উপস্থিতি",
@@ -130,7 +172,7 @@
     "broadcast": "ব্রডকাস্ট বার্তা পাঠান",
     "inbox": "ইনবক্স",
     "markAllRead": "সব পড়া হিসেবে চিহ্নিত করুন",
-    "noNotifications": "কোন বিজ্ঞপ্তি নেই",
+    "noNotifications": "কোনো বিজ্ঞপ্তি নেই",
     "subject": "বিষয়",
     "message": "বার্তা",
     "recipients": "প্রাপক",

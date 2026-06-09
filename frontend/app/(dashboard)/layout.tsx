@@ -32,43 +32,44 @@ import { toast } from 'sonner';
 import CommandPalette from '@/components/CommandPalette';
 import LanguageToggle from '@/components/LanguageToggle';
 import QuickAddMenu from '@/components/dashboard/QuickAddMenu';
+import { useTranslations } from 'next-intl';
 
 const navGroups = [
   {
-    label: 'Overview',
+    groupKey: 'overview' as const,
     items: [
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/dashboard', key: 'dashboard', icon: LayoutDashboard },
     ],
   },
   {
-    label: 'Academics',
+    groupKey: 'academics' as const,
     items: [
-      { href: '/dashboard/students', label: 'Students', icon: Users },
-      { href: '/dashboard/classes', label: 'Classes', icon: Layers },
-      { href: '/dashboard/subjects', label: 'Subjects', icon: Library },
-      { href: '/dashboard/attendance', label: 'Attendance', icon: ClipboardCheck },
-      { href: '/dashboard/attendance/reports', label: 'Attendance Reports', icon: ClipboardCheck },
-      { href: '/dashboard/exams', label: 'Exams & Grades', icon: BookOpen },
-      { href: '/dashboard/at-risk', label: 'At-Risk Students', icon: AlertTriangle },
+      { href: '/dashboard/students', key: 'students', icon: Users },
+      { href: '/dashboard/classes', key: 'classes', icon: Layers },
+      { href: '/dashboard/subjects', key: 'subjects', icon: Library },
+      { href: '/dashboard/attendance', key: 'attendance', icon: ClipboardCheck },
+      { href: '/dashboard/attendance/reports', key: 'attendanceReports', icon: ClipboardCheck },
+      { href: '/dashboard/exams', key: 'exams', icon: BookOpen },
+      { href: '/dashboard/at-risk', key: 'atRisk', icon: AlertTriangle },
     ],
   },
   {
-    label: 'Finance',
+    groupKey: 'finance' as const,
     items: [
-      { href: '/dashboard/finance', label: 'Finance', icon: DollarSign },
+      { href: '/dashboard/finance', key: 'finance', icon: DollarSign },
     ],
   },
   {
-    label: 'Communication',
+    groupKey: 'communication' as const,
     items: [
-      { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
+      { href: '/dashboard/notifications', key: 'notifications', icon: Bell },
     ],
   },
   {
-    label: 'AI Tools',
+    groupKey: 'aiTools' as const,
     items: [
-      { href: '/dashboard/ai', label: 'AI Assistant', icon: Bot },
-      { href: '/dashboard/practice', label: 'Practice Materials', icon: BookMarked },
+      { href: '/dashboard/ai', key: 'aiAssistant', icon: Bot },
+      { href: '/dashboard/practice', key: 'practice', icon: BookMarked },
     ],
   },
 ];
@@ -85,16 +86,10 @@ interface CurrentUser {
   role: string;
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  super_admin: 'Super Admin',
-  school_admin: 'School Admin',
-  teacher: 'Teacher',
-  finance: 'Finance',
-};
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations('nav');
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [inbox, setInbox] = useState<InboxData>({ unread: 0, items: [] });
@@ -185,10 +180,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-2">
         {navGroups.map((group) => (
-          <div key={group.label} className="mb-4">
+          <div key={group.groupKey} className="mb-4">
             {(!collapsed || mobile) && (
               <p className="text-xs font-medium text-zinc-600 uppercase tracking-wider px-2 mb-1">
-                {group.label}
+                {t(`groups.${group.groupKey}`)}
               </p>
             )}
             {group.items.map((item) => {
@@ -208,7 +203,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   )}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
-                  {(!collapsed || mobile) && <span>{item.label}</span>}
+                  {(!collapsed || mobile) && <span>{t(item.key)}</span>}
                 </Link>
               );
             })}
@@ -226,7 +221,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         >
           <Settings className="w-4 h-4 flex-shrink-0" />
-          {(!collapsed || mobile) && <span>Settings</span>}
+          {(!collapsed || mobile) && <span>{t('settings')}</span>}
         </Link>
         <button
           onClick={handleLogout}
@@ -236,7 +231,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
-          {(!collapsed || mobile) && <span>Logout</span>}
+          {(!collapsed || mobile) && <span>{t('logout')}</span>}
         </button>
       </div>
     </div>
@@ -292,7 +287,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="group flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 h-9 text-sm text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors w-full max-w-xs"
           >
             <Search className="w-4 h-4 flex-shrink-0" />
-            <span className="flex-1 text-left">Search…</span>
+            <span className="flex-1 text-left">{t('search')}</span>
             <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
               ⌘K
             </kbd>
@@ -317,16 +312,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {bellOpen && (
               <div className="absolute right-0 top-9 w-80 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-                  <span className="text-sm font-semibold text-white">Notifications</span>
+                  <span className="text-sm font-semibold text-white">{t('notificationsTitle')}</span>
                   {inbox.unread > 0 && (
                     <button onClick={markAllRead} className="text-xs text-blue-400 hover:underline">
-                      Mark all read
+                      {t('markAllRead')}
                     </button>
                   )}
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   {inbox.items.length === 0 ? (
-                    <p className="text-sm text-zinc-500 text-center py-8">No notifications</p>
+                    <p className="text-sm text-zinc-500 text-center py-8">{t('noNotifications')}</p>
                   ) : (
                     inbox.items.slice(0, 8).map((n) => (
                       <div
@@ -357,7 +352,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     onClick={() => setBellOpen(false)}
                     className="text-xs text-blue-400 hover:underline"
                   >
-                    View all notifications
+                    {t('viewAllNotifications')}
                   </Link>
                 </div>
               </div>
@@ -388,7 +383,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <p className="text-sm font-semibold text-white truncate">{me.firstName} {me.lastName}</p>
                       <p className="text-xs text-zinc-500 truncate">{me.email}</p>
                       <span className="inline-block mt-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                        {ROLE_LABEL[me.role] ?? me.role}
+                        {(['super_admin', 'school_admin', 'teacher', 'finance'] as const).includes(me.role as never)
+                          ? t(`roles.${me.role as 'super_admin' | 'school_admin' | 'teacher' | 'finance'}`)
+                          : me.role}
                       </span>
                     </div>
                   )}
@@ -398,20 +395,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
                     >
-                      <User className="w-4 h-4 text-zinc-400" /> My Profile
+                      <User className="w-4 h-4 text-zinc-400" /> {t('profileMenu.myProfile')}
                     </Link>
                     <Link
                       href="/dashboard/settings"
                       onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
                     >
-                      <Settings className="w-4 h-4 text-zinc-400" /> Settings
+                      <Settings className="w-4 h-4 text-zinc-400" /> {t('profileMenu.settings')}
                     </Link>
                     <button
                       onClick={() => { setProfileOpen(false); handleLogout(); }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-red-400 hover:bg-red-950/30 transition-colors"
                     >
-                      <LogOut className="w-4 h-4" /> Logout
+                      <LogOut className="w-4 h-4" /> {t('profileMenu.logout')}
                     </button>
                   </div>
                 </motion.div>
