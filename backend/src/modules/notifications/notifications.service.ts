@@ -3,7 +3,7 @@ import {
   sendSMS, createInAppNotification,
   logNotification, substituteVariables,
 } from '../../services/notification.service';
-import type { BroadcastInput } from './notifications.validator';
+import type { BroadcastInput, NotifyStudentsInput } from './notifications.validator';
 
 interface Recipient {
   userId: string;
@@ -120,6 +120,60 @@ export async function sendBroadcast(
         status: ok ? 'sent' : 'failed',
       });
 
+      if (ok) sent++; else failed++;
+    }
+  }
+
+  return { sent, failed };
+}
+
+/** Send a notice to the guardians of a specific set of students (tenant-scoped). */
+export async function notifyStudents(
+  schoolId: string,
+  senderId: string,
+  input: NotifyStudentsInput,
+): Promise<{ sent: number; failed: number }> {
+  const students = await prisma.student.findMany({
+    where: { id: { in: input.studentIds }, schoolId, status: 'active' },
+    select: { id: true, firstName: true, lastName: true, guardianEmail: true, guardianPhone: true, userId: true },
+  });
+  const recipients: Recipient[] = students.map((s) => ({
+    userId: s.userId ?? s.id,
+    email: s.guardianEmail,
+    phone: s.guardianPhone,
+    name: `${s.firstName} ${s.lastName} Guardian`,
+  }));
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const recipient of recipients) {
+    const body = substituteVariables(input.message, { recipientName: recipient.name });
+    const subject = substituteVariables(input.subject, { recipientName: recipient.name });
+
+    for (const channel of input.channels) {
+      let ok = false;
+      if (channel === 'in_app') {
+        await createInAppNotification({ schoolId, userId: recipient.userId, title: subject, body, type: 'broadcast' });
+        ok = true;
+      } else if (channel === 'email' && recipient.email) {
+        const { Resend } = await import('resend');
+        const { env } = await import('../../config/env');
+        if (env.RESEND_API_KEY) {
+          const resend = new Resend(env.RESEND_API_KEY);
+          const res = await resend.emails.send({ from: env.RESEND_FROM, to: recipient.email, subject, text: body });
+          ok = !res.error;
+        }
+      } else if (channel === 'sms' && recipient.phone) {
+        const result = await sendSMS({ to: recipient.phone, body });
+        ok = result.ok;
+      }
+
+      await logNotification({
+        schoolId, senderId, recipientId: recipient.userId,
+        type: 'broadcast', channel: channel as 'email' | 'sms' | 'in_app',
+        subject, body, status: ok ? 'sent' : 'failed',
+      });
       if (ok) sent++; else failed++;
     }
   }

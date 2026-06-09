@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/errorHandler';
 import type { CreateStudentInput, UpdateStudentInput, StudentQuery } from './students.validator';
+import { validateImportRow, RawStudentRow } from './students.import';
 
 export async function listStudents(schoolId: string, query: StudentQuery) {
   const { page, limit, search, classId, status } = query;
@@ -254,4 +255,69 @@ export async function getStats(schoolId: string) {
     }),
   ]);
   return { total, active, thisMonth };
+}
+
+export async function bulkStudents(
+  schoolId: string,
+  action: 'deactivate' | 'delete' | 'move-class',
+  ids: string[],
+  classId?: string,
+) {
+  // Only operate on rows that belong to this tenant.
+  const owned = await prisma.student.findMany({
+    where: { id: { in: ids }, schoolId },
+    select: { id: true },
+  });
+  const ownedIds = owned.map((s) => s.id);
+  if (ownedIds.length === 0) return { affected: 0 };
+
+  if (action === 'move-class') {
+    if (!classId) throw new AppError(400, 'classId is required to move students');
+    const cls = await prisma.class.findFirst({ where: { id: classId, schoolId } });
+    if (!cls) throw new AppError(404, 'Target class not found');
+    const res = await prisma.student.updateMany({
+      where: { id: { in: ownedIds }, schoolId },
+      data: { classId },
+    });
+    return { affected: res.count };
+  }
+
+  // 'deactivate' and 'delete' both soft-deactivate — hard delete is unsafe with
+  // dependent attendance/grade/invoice records.
+  const res = await prisma.student.updateMany({
+    where: { id: { in: ownedIds }, schoolId },
+    data: { status: 'inactive' },
+  });
+  return { affected: res.count };
+}
+
+export async function importStudents(schoolId: string, rows: RawStudentRow[]) {
+  const classes = await prisma.class.findMany({
+    where: { schoolId },
+    select: { id: true, name: true, section: true },
+  });
+  let created = 0;
+  const errors: { row: number; message: string }[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const result = validateImportRow(rows[i], classes);
+    if (!result.ok) {
+      errors.push({ row: i + 1, message: result.message });
+      continue;
+    }
+    try {
+      const { dateOfBirth, ...rest } = result.value;
+      await prisma.student.create({
+        data: {
+          schoolId,
+          ...rest,
+          ...(dateOfBirth ? { dateOfBirth: new Date(dateOfBirth) } : {}),
+        },
+      });
+      created += 1;
+    } catch (e) {
+      errors.push({ row: i + 1, message: e instanceof Error ? e.message : 'Failed to create' });
+    }
+  }
+  return { created, errors };
 }

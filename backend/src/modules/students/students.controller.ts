@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as studentsService from './students.service';
-import { createStudentSchema, updateStudentSchema, studentQuerySchema } from './students.validator';
+import { createStudentSchema, updateStudentSchema, studentQuerySchema, bulkStudentSchema, importStudentsSchema } from './students.validator';
+import type { RawStudentRow } from './students.import';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
@@ -72,6 +73,22 @@ export async function myRanking(req: Request, res: Response, next: NextFunction)
   try {
     const examId = req.query.examId as string | undefined;
     const data = await studentsService.getMyRanking(req.user.userId, req.tenant.schoolId, examId);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+}
+
+export async function bulk(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { action, ids, classId } = bulkStudentSchema.parse(req.body);
+    const data = await studentsService.bulkStudents(req.tenant.schoolId, action, ids, classId);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+}
+
+export async function importCsv(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { rows } = importStudentsSchema.parse(req.body);
+    const data = await studentsService.importStudents(req.tenant.schoolId, rows as RawStudentRow[]);
     res.json({ success: true, data });
   } catch (err) { next(err); }
 }

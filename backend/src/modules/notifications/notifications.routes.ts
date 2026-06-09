@@ -72,6 +72,7 @@ router.use(authenticate);
  *                     failed: { type: integer }
  */
 router.post('/broadcast', requireRole('school_admin', 'teacher'), ctrl.broadcast);
+router.post('/notify-students', requireRole('school_admin', 'teacher'), ctrl.notifyStudents);
 
 /**
  * @openapi
