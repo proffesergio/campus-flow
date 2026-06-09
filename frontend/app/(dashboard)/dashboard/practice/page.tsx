@@ -94,7 +94,7 @@ export default function PracticePage() {
   useEffect(() => {
     if (!formClassId) { setFormSubjects([]); return; }
     api.get<{ success: boolean; data: Subject[] }>(`/exams/subjects?classId=${formClassId}`)
-      .then((r) => setFormSubjects(r.data.data ?? [])).catch(() => {});
+      .then((r) => setFormSubjects(r.data.data ?? [])).catch(() => setFormSubjects([]));
   }, [formClassId]);
 
   function openCreate() {

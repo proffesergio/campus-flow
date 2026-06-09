@@ -55,7 +55,7 @@ export default function NewExamPage() {
   useEffect(() => {
     if (!selectedClassId) { setSubjects([]); return; }
     api.get<{ success: boolean; data: Subject[] }>(`/exams/subjects?classId=${selectedClassId}`)
-      .then((r) => setSubjects(r.data.data)).catch(() => {});
+      .then((r) => setSubjects(r.data.data)).catch(() => setSubjects([]));
   }, [selectedClassId]);
 
   const classOptions = classes.map((c) => ({ value: c.id, label: `${c.name}${c.section ? ` – ${c.section}` : ''}` }));

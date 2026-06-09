@@ -12,7 +12,6 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { FormField } from '@/components/ui/form-field';
 import { Combobox } from '@/components/ui/combobox';
 import { AvatarField } from '@/components/ui/avatar-field';
@@ -69,6 +68,7 @@ export default function StudentDrawer({ open, onClose, onSuccess, student }: Pro
               lastName: student.lastName,
               classId: student.class.id,
               rollNumber: student.rollNumber ?? '',
+              guardianName: student.guardianName ?? '',
               guardianPhone: student.guardianPhone,
               photoUrl: student.photoUrl ?? '',
             }

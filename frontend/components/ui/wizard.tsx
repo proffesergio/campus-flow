@@ -22,7 +22,12 @@ export function Wizard({
     if (await onValidateStep(steps[i].id)) setI((n) => Math.min(n + 1, steps.length - 1));
   }
   async function finish() {
-    if (await onValidateStep(steps[i].id)) onSubmit();
+    // Validate every step, not just the visible one — otherwise an invalid field on
+    // an earlier step makes submit silently no-op. Jump to the first failing step.
+    for (let s = 0; s < steps.length; s++) {
+      if (!(await onValidateStep(steps[s].id))) { setI(s); return; }
+    }
+    onSubmit();
   }
 
   return (
