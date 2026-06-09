@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { broadcastSchema } from './notifications.validator';
+import { broadcastSchema, notifyStudentsSchema } from './notifications.validator';
 import * as svc from './notifications.service';
 import { AppError } from '../../middleware/errorHandler';
 
@@ -14,6 +14,17 @@ export async function broadcast(req: Request, res: Response, next: NextFunction)
       req.user!.userId,
       parsed.data,
     );
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+}
+
+export async function notifyStudents(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = notifyStudentsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(422, 'Validation failed', parsed.error.flatten().fieldErrors);
+    }
+    const result = await svc.notifyStudents(req.tenant!.schoolId, req.user!.userId, parsed.data);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
 }

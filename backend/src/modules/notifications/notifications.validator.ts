@@ -10,4 +10,12 @@ export const broadcastSchema = z.object({
   variables: z.record(z.string()).optional(),
 });
 
+export const notifyStudentsSchema = z.object({
+  studentIds: z.array(z.string().cuid()).min(1),
+  subject: z.string().min(1),
+  message: z.string().min(1),
+  channels: z.array(z.enum(['email', 'sms', 'in_app'])).min(1),
+});
+
 export type BroadcastInput = z.infer<typeof broadcastSchema>;
+export type NotifyStudentsInput = z.infer<typeof notifyStudentsSchema>;

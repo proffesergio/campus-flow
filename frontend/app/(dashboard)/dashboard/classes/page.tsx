@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -123,16 +124,15 @@ export default function ClassesPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Classes</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Create and manage your school&apos;s classes</p>
-        </div>
-        <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-          <Plus className="w-4 h-4" /> Add Class
-        </Button>
-      </div>
+      <PageHeader
+        title="Classes"
+        subtitle="Create and manage your school's classes"
+        actions={
+          <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <Plus className="w-4 h-4" /> Add Class
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 max-w-md">

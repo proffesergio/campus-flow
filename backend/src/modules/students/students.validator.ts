@@ -34,6 +34,17 @@ export const studentQuerySchema = z.object({
   status: z.enum(['active', 'inactive', 'graduated', 'transferred']).optional(),
 });
 
+export const bulkStudentSchema = z.object({
+  action: z.enum(['deactivate', 'delete', 'move-class']),
+  ids: z.array(z.string().cuid()).min(1),
+  classId: z.string().cuid().optional(),
+});
+
+export const importStudentsSchema = z.object({
+  rows: z.array(z.record(z.string(), z.string().optional())).min(1).max(1000),
+});
+
 export type CreateStudentInput = z.infer<typeof createStudentSchema>;
 export type UpdateStudentInput = z.infer<typeof updateStudentSchema>;
 export type StudentQuery = z.infer<typeof studentQuerySchema>;
+export type BulkStudentInput = z.infer<typeof bulkStudentSchema>;

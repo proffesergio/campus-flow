@@ -66,6 +66,10 @@ router.get('/me/ranking', requireRole('student'), controller.myRanking);
 router.get('/', controller.list);
 router.post('/', requireRole('school_admin', 'teacher', 'super_admin'), controller.create);
 
+// Bulk ops + CSV import — before /:id to avoid param capture.
+router.post('/bulk', requireRole('school_admin', 'teacher', 'super_admin'), controller.bulk);
+router.post('/import', requireRole('school_admin', 'super_admin'), controller.importCsv);
+
 /**
  * @openapi
  * /api/students/{id}:
