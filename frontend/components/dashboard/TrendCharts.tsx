@@ -4,6 +4,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import { useTranslations } from 'next-intl';
 import { SectionCard } from '@/components/ui/section-card';
 import { ACCENTS } from '@/lib/design/tokens';
 
@@ -17,10 +18,11 @@ const tooltip = { backgroundColor: '#18181b', border: '1px solid #27272a', borde
 export default function TrendCharts({
   attendance, fees, grades,
 }: { attendance: AttendancePoint[]; fees: FeePoint[]; grades: GradeBucket[] }) {
+  const t = useTranslations('dashboard');
   const hasGrades = grades.some((g) => g.count > 0);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-      <SectionCard title="Attendance trend" className="lg:col-span-2">
+      <SectionCard title={t('attendanceTrendTitle')} className="lg:col-span-2">
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={attendance}>
             <defs>
@@ -37,7 +39,7 @@ export default function TrendCharts({
         </ResponsiveContainer>
       </SectionCard>
 
-      <SectionCard title="Grade distribution">
+      <SectionCard title={t('gradeDistributionTitle')}>
         {hasGrades ? (
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
@@ -48,11 +50,11 @@ export default function TrendCharts({
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-sm text-zinc-600 text-center py-12">No grades published yet</p>
+          <p className="text-sm text-zinc-600 text-center py-12">{t('noGradesPublished')}</p>
         )}
       </SectionCard>
 
-      <SectionCard title="Fee collection (monthly)" className="lg:col-span-3">
+      <SectionCard title={t('feeCollectionTitle')} className="lg:col-span-3">
         <ResponsiveContainer width="100%" height={160}>
           <BarChart data={fees}>
             <XAxis dataKey="month" {...axis} tickLine={false} axisLine={false} />

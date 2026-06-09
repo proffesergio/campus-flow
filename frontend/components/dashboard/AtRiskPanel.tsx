@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { SectionCard } from '@/components/ui/section-card';
 
 export interface AtRiskItem {
@@ -9,13 +10,14 @@ export interface AtRiskItem {
 }
 
 export default function AtRiskPanel({ items }: { items: AtRiskItem[] }) {
+  const t = useTranslations('dashboard');
   return (
     <SectionCard
-      title="⚠ At-risk students"
+      title={`⚠ ${t('atRiskTitle')}`}
       action={<span className="text-xs text-red-400">{items.length}</span>}
     >
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-600 py-4 text-center">No students flagged 🎉</p>
+        <p className="text-sm text-zinc-600 py-4 text-center">{t('noStudentsFlagged')} 🎉</p>
       ) : (
         <ul className="divide-y divide-zinc-800">
           {items.slice(0, 5).map((it) => (
@@ -30,7 +32,7 @@ export default function AtRiskPanel({ items }: { items: AtRiskItem[] }) {
         </ul>
       )}
       <Link href="/dashboard/at-risk" className="text-xs text-blue-400 hover:underline mt-2 inline-block">
-        View all
+        {t('viewAll')}
       </Link>
     </SectionCard>
   );
