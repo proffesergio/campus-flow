@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { motion } from 'framer-motion';
 import {
   Plus, BookMarked, FileText, Link2, Video, StickyNote,
@@ -11,6 +14,9 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FormField } from '@/components/ui/form-field';
+import { Combobox } from '@/components/ui/combobox';
+import { Wizard, WizardStep } from '@/components/ui/wizard';
 
 interface Class { id: string; name: string; section: string | null }
 interface Subject { id: string; name: string }
@@ -30,22 +36,38 @@ const TYPE_META: Record<string, { icon: typeof FileText; color: string; bg: stri
   note:  { icon: StickyNote,color: 'text-yellow-400',bg: 'bg-yellow-500/10' },
 };
 
+const schema = z.object({
+  title: z.string().min(1, 'Required'),
+  description: z.string().optional(),
+  type: z.enum(['pdf', 'link', 'video', 'note']),
+  fileUrl: z.string().min(1, 'Required'),
+  classId: z.string().optional(),
+  subjectId: z.string().optional(),
+  isPublished: z.boolean(),
+});
+type FormData = z.infer<typeof schema>;
+
+const STEP_FIELDS: Record<string, (keyof FormData)[]> = {
+  details: ['title', 'fileUrl', 'type'],
+  targeting: [],
+};
+
+const inputCls = 'bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500';
+
 export default function PracticePage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [formSubjects, setFormSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Form state
-  const [form, setForm] = useState({
-    title: '', description: '', type: 'pdf',
-    fileUrl: '', classId: '', subjectId: '', isPublished: true,
-  });
-  const [saving, setSaving] = useState(false);
+  const { register, handleSubmit, reset, watch, setValue, trigger, formState: { errors } } =
+    useForm<FormData>({ resolver: zodResolver(schema), mode: 'onTouched', defaultValues: { type: 'pdf', isPublished: true } });
+  const values = watch();
 
   const fetchMaterials = useCallback(async () => {
     setLoading(true);
@@ -54,15 +76,10 @@ export default function PracticePage() {
       if (search) params.set('search', search);
       if (classFilter) params.set('classId', classFilter);
       if (typeFilter) params.set('type', typeFilter);
-      const res = await api.get<{ success: boolean; data: Material[] }>(
-        `/practice-materials?${params}`,
-      );
+      const res = await api.get<{ success: boolean; data: Material[] }>(`/practice-materials?${params}`);
       setMaterials(res.data.data ?? []);
-    } catch {
-      setMaterials([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setMaterials([]); }
+    finally { setLoading(false); }
   }, [search, classFilter, typeFilter]);
 
   useEffect(() => { fetchMaterials(); }, [fetchMaterials]);
@@ -72,34 +89,40 @@ export default function PracticePage() {
       .then((r) => setClasses(r.data.data ?? [])).catch(() => {});
   }, []);
 
+  // Subjects for the FORM's class (not the list filter).
+  const formClassId = values.classId;
   useEffect(() => {
-    if (!classFilter) { setSubjects([]); return; }
-    api.get<{ success: boolean; data: Subject[] }>(`/exams/subjects?classId=${classFilter}`)
-      .then((r) => setSubjects(r.data.data ?? [])).catch(() => {});
-  }, [classFilter]);
+    if (!formClassId) { setFormSubjects([]); return; }
+    api.get<{ success: boolean; data: Subject[] }>(`/exams/subjects?classId=${formClassId}`)
+      .then((r) => setFormSubjects(r.data.data ?? [])).catch(() => {});
+  }, [formClassId]);
 
-  async function handleSave() {
-    if (!form.title.trim() || !form.fileUrl.trim()) {
-      toast.error('Title and URL are required');
-      return;
-    }
-    setSaving(true);
+  function openCreate() {
+    reset({ title: '', description: '', type: 'pdf', fileUrl: '', classId: '', subjectId: '', isPublished: true });
+    setDrawerOpen(true);
+  }
+  function validateStep(id: string) {
+    const fields = STEP_FIELDS[id];
+    return fields.length === 0 ? true : trigger(fields);
+  }
+
+  async function onSubmit(data: FormData) {
+    setSubmitting(true);
     try {
       await api.post('/practice-materials', {
-        ...form,
-        classId: form.classId || null,
-        subjectId: form.subjectId || null,
-        description: form.description || null,
+        ...data,
+        classId: data.classId || null,
+        subjectId: data.subjectId || null,
+        description: data.description || null,
       });
       toast.success('Material added');
       setDrawerOpen(false);
-      setForm({ title: '', description: '', type: 'pdf', fileUrl: '', classId: '', subjectId: '', isPublished: true });
       fetchMaterials();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(msg ?? 'Failed to save material');
     } finally {
-      setSaving(false);
+      setSubmitting(false);
     }
   }
 
@@ -113,9 +136,55 @@ export default function PracticePage() {
   }
 
   const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.05 } } };
-  const fadeUp  = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
+  const fadeUp = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
 
-  const inputCls = 'bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500';
+  const classOptions = classes.map((c) => ({ value: c.id, label: `${c.name}${c.section ? ` – ${c.section}` : ''}` }));
+  const subjectOptions = formSubjects.map((s) => ({ value: s.id, label: s.name }));
+
+  const steps: WizardStep[] = [
+    {
+      id: 'details', title: 'Details',
+      content: (
+        <div className="space-y-4">
+          <FormField label="Title" required error={errors.title?.message}>
+            <Input {...register('title')} placeholder="e.g. Chapter 5 – Photosynthesis" className={inputCls} />
+          </FormField>
+          <FormField label="Description" error={errors.description?.message}>
+            <Input {...register('description')} placeholder="Optional short description" className={inputCls} />
+          </FormField>
+          <FormField label="Type" required error={errors.type?.message}>
+            <select {...register('type')} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
+              <option value="pdf">PDF</option><option value="link">Link</option><option value="video">Video</option><option value="note">Note</option>
+            </select>
+          </FormField>
+          <FormField label={values.type === 'pdf' ? 'File URL' : 'URL'} required error={errors.fileUrl?.message}>
+            <Input {...register('fileUrl')} placeholder={values.type === 'pdf' ? 'https://…' : 'https://youtube.com/…'} className={inputCls} />
+          </FormField>
+        </div>
+      ),
+    },
+    {
+      id: 'targeting', title: 'Targeting',
+      content: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Class" error={errors.classId?.message}>
+              <Combobox options={classOptions} value={values.classId}
+                onChange={(v) => { setValue('classId', v); setValue('subjectId', ''); }} placeholder="All classes" />
+            </FormField>
+            <FormField label="Subject" error={errors.subjectId?.message}>
+              <Combobox options={subjectOptions} value={values.subjectId}
+                onChange={(v) => setValue('subjectId', v)} placeholder={formClassId ? 'All subjects' : 'Pick a class first'} disabled={!formClassId} />
+            </FormField>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" {...register('isPublished')} className="rounded border-zinc-600" />
+            <span className="text-sm text-zinc-300">Published (visible to students)</span>
+          </label>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="p-6 space-y-6">
@@ -126,10 +195,10 @@ export default function PracticePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Practice Materials</h1>
-            <p className="text-sm text-zinc-500 mt-0.5">Upload study resources for students</p>
+            <p className="text-sm text-zinc-500 mt-0.5">Share study resources with students</p>
           </div>
         </div>
-        <Button onClick={() => setDrawerOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+        <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
           <Plus className="w-4 h-4" /> Add Material
         </Button>
       </div>
@@ -138,52 +207,32 @@ export default function PracticePage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search materials..."
-            className={`pl-9 ${inputCls}`}
-          />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search materials..." className={`pl-9 ${inputCls}`} />
         </div>
         <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}
           className="h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
           <option value="">All classes</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}{c.section ? ` – ${c.section}` : ''}</option>
-          ))}
+          {classes.map((c) => <option key={c.id} value={c.id}>{c.name}{c.section ? ` – ${c.section}` : ''}</option>)}
         </select>
         <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
           className="h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-          <option value="">All types</option>
-          <option value="pdf">PDF</option>
-          <option value="link">Link</option>
-          <option value="video">Video</option>
-          <option value="note">Note</option>
+          <option value="">All types</option><option value="pdf">PDF</option><option value="link">Link</option><option value="video">Video</option><option value="note">Note</option>
         </select>
       </div>
 
       {/* Materials grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 bg-zinc-800 rounded-xl" />
-          ))}
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-40 bg-zinc-800 rounded-xl" />)}
         </div>
       ) : materials.length === 0 ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl py-20 text-center">
           <Upload className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
           <p className="text-zinc-500 text-sm">No practice materials yet</p>
-          <button onClick={() => setDrawerOpen(true)} className="text-blue-400 text-sm hover:underline mt-1">
-            Add the first material
-          </button>
+          <button onClick={openCreate} className="text-blue-400 text-sm hover:underline mt-1">Add the first material</button>
         </div>
       ) : (
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
+        <motion.div variants={stagger} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {materials.map((m) => {
             const meta = TYPE_META[m.type] ?? TYPE_META.pdf;
             const Icon = meta.icon;
@@ -196,39 +245,21 @@ export default function PracticePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{m.title}</p>
-                      {m.description && (
-                        <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{m.description}</p>
-                      )}
+                      {m.description && <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{m.description}</p>}
                     </div>
                   </div>
-
                   <div className="flex flex-wrap gap-1.5">
-                    {m.class && (
-                      <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded-full text-xs text-zinc-400">
-                        {m.class.name}{m.class.section ? ` – ${m.class.section}` : ''}
-                      </span>
-                    )}
-                    {m.subject && (
-                      <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded-full text-xs text-zinc-400">
-                        {m.subject.name}
-                      </span>
-                    )}
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${meta.bg} ${meta.color}`}>
-                      {m.type}
-                    </span>
+                    {m.class && <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded-full text-xs text-zinc-400">{m.class.name}{m.class.section ? ` – ${m.class.section}` : ''}</span>}
+                    {m.subject && <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded-full text-xs text-zinc-400">{m.subject.name}</span>}
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${meta.bg} ${meta.color}`}>{m.type}</span>
                   </div>
-
                   <div className="flex items-center justify-between pt-1 border-t border-zinc-800">
-                    <p className="text-xs text-zinc-600">
-                      {m.uploadedBy.firstName} {m.uploadedBy.lastName}
-                    </p>
+                    <p className="text-xs text-zinc-600">{m.uploadedBy.firstName} {m.uploadedBy.lastName}</p>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <a href={m.fileUrl} target="_blank" rel="noopener noreferrer"
-                        className="p-1.5 rounded text-zinc-400 hover:text-blue-400 hover:bg-zinc-800 transition-colors">
+                      <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded text-zinc-400 hover:text-blue-400 hover:bg-zinc-800 transition-colors">
                         {m.type === 'pdf' ? <Download className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
                       </a>
-                      <button onClick={() => handleDelete(m.id)}
-                        className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors">
+                      <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -240,92 +271,14 @@ export default function PracticePage() {
         </motion.div>
       )}
 
-      {/* Add material drawer */}
+      {/* Add material drawer (wizard) */}
       {drawerOpen && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setDrawerOpen(false)} />
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => !submitting && setDrawerOpen(false)} />
           <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-zinc-900 border-l border-zinc-800 z-50 overflow-y-auto">
             <div className="p-6 space-y-4">
               <h2 className="text-xl font-bold text-white">Add Practice Material</h2>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-zinc-300">Title *</label>
-                <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  placeholder="e.g. Chapter 5 – Photosynthesis" className={inputCls} />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-zinc-300">Description</label>
-                <Input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Optional short description" className={inputCls} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-zinc-300">Type *</label>
-                  <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-                    className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-                    <option value="pdf">PDF</option>
-                    <option value="link">Link</option>
-                    <option value="video">Video</option>
-                    <option value="note">Note</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-zinc-300">Published</label>
-                  <div className="h-10 flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, isPublished: !f.isPublished }))}
-                      className={`relative w-11 h-6 rounded-full transition-colors ${form.isPublished ? 'bg-blue-600' : 'bg-zinc-700'}`}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${form.isPublished ? 'translate-x-5' : ''}`} />
-                    </button>
-                    <span className="ml-2 text-sm text-zinc-400">{form.isPublished ? 'Yes' : 'No'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-zinc-300">
-                  {form.type === 'pdf' ? 'File URL *' : 'URL *'}
-                </label>
-                <Input value={form.fileUrl} onChange={(e) => setForm((f) => ({ ...f, fileUrl: e.target.value }))}
-                  placeholder={form.type === 'pdf' ? 'https://...' : 'https://youtube.com/...'}
-                  className={inputCls} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-zinc-300">Class</label>
-                  <select value={form.classId} onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value, subjectId: '' }))}
-                    className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-                    <option value="">All classes</option>
-                    {classes.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}{c.section ? ` – ${c.section}` : ''}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-zinc-300">Subject</label>
-                  <select value={form.subjectId} onChange={(e) => setForm((f) => ({ ...f, subjectId: e.target.value }))}
-                    className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-                    <option value="">All subjects</option>
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button onClick={handleSave} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                  {saving ? 'Saving...' : 'Add Material'}
-                </Button>
-                <Button variant="ghost" onClick={() => setDrawerOpen(false)} className="flex-1 text-zinc-400">
-                  Cancel
-                </Button>
-              </div>
+              <Wizard steps={steps} onValidateStep={validateStep} onSubmit={handleSubmit(onSubmit)} submitting={submitting} submitLabel="Add Material" />
             </div>
           </div>
         </>
