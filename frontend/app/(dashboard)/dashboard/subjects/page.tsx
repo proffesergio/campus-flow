@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -121,16 +122,15 @@ export default function SubjectsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Subjects</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Manage subjects for each class</p>
-        </div>
-        <Button onClick={openCreate} disabled={!classId} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-          <Plus className="w-4 h-4" /> Add Subject
-        </Button>
-      </div>
+      <PageHeader
+        title="Subjects"
+        subtitle="Manage subjects for each class"
+        actions={
+          <Button onClick={openCreate} disabled={!classId} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <Plus className="w-4 h-4" /> Add Subject
+          </Button>
+        }
+      />
 
       {/* Class selector */}
       <div className="flex items-center gap-3 flex-wrap">

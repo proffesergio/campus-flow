@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Plus, BookOpen, Pencil, Trash2, ClipboardList } from 'lucide-react';
+import { Plus, BookOpen, Trash2, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DataTable, Column } from '@/components/ui/data-table';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Exam {
   id: string; name: string; examType: string; examDate: string;
@@ -22,6 +24,10 @@ const TYPE_LABEL: Record<string, string> = {
   assignment: 'Assignment', class_test: 'Class Test',
 };
 
+function classLabel(c: { name: string; section: string | null } | null) {
+  return c ? `${c.name}${c.section ? ` – ${c.section}` : ''}` : '—';
+}
+
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -33,8 +39,8 @@ export default function ExamsPage() {
     try {
       const params = new URLSearchParams();
       if (classFilter) params.set('classId', classFilter);
-      const res = await api.get<{ success: boolean; data: Exam[] }>(`/exams?${params}`);
-      setExams(res.data.data ?? []);
+      const res = await api.get<{ success: boolean; items?: Exam[]; data?: Exam[] }>(`/exams?${params}`);
+      setExams(res.data.items ?? res.data.data ?? []);
     } catch { toast.error('Failed to load exams'); }
     finally { setLoading(false); }
   }, [classFilter]);
@@ -54,101 +60,77 @@ export default function ExamsPage() {
     } catch { toast.error('Failed to delete'); }
   }
 
+  const columns: Column<Exam>[] = [
+    { key: 'name', header: 'Exam', render: (e) => <span className="text-sm font-medium text-white">{e.name}</span> },
+    { key: 'subject', header: 'Subject', render: (e) => <span className="text-sm text-zinc-400">{e.subject?.name ?? '—'}</span> },
+    { key: 'class', header: 'Class', render: (e) => <span className="text-sm text-zinc-400">{classLabel(e.class)}</span> },
+    { key: 'type', header: 'Type', render: (e) => <span className="text-sm text-zinc-400">{TYPE_LABEL[e.examType] ?? e.examType}</span> },
+    { key: 'date', header: 'Date', render: (e) => <span className="text-sm text-zinc-400">{new Date(e.examDate).toLocaleDateString()}</span> },
+    { key: 'marks', header: 'Marks', render: (e) => <span className="text-sm text-zinc-400">{e.totalMarks}</span> },
+    { key: 'graded', header: 'Graded', render: (e) => <span className="text-sm text-zinc-400">{e._count.grades}</span> },
+    {
+      key: 'status', header: 'Status',
+      render: (e) => (
+        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+          e.isPublished
+            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+            : 'bg-zinc-700/50 text-zinc-400 border border-zinc-700'
+        }`}>
+          {e.isPublished ? 'Published' : 'Draft'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions', header: '',
+      render: (e) => (
+        <div className="flex items-center gap-1">
+          <Link href={`/dashboard/exams/${e.id}/marks`} title="Enter marks"
+            className="p-1.5 rounded text-zinc-400 hover:text-blue-400 hover:bg-zinc-800 transition-colors">
+            <ClipboardList className="w-3.5 h-3.5" />
+          </Link>
+          <button onClick={() => handleDelete(e.id)}
+            className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Exams & Grades</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Manage exams and enter grades</p>
-        </div>
-        <Link href="/dashboard/exams/new">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-            <Plus className="w-4 h-4" /> New Exam
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Exams & Grades"
+        subtitle="Manage exams and enter grades"
+        actions={
+          <Link href="/dashboard/exams/new">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2"><Plus className="w-4 h-4" /> New Exam</Button>
+          </Link>
+        }
+      />
 
       <div className="flex gap-3">
-        <select
-          value={classFilter}
-          onChange={(e) => setClassFilter(e.target.value)}
-          className="h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white"
-        >
+        <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}
+          className="h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
           <option value="">All classes</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}{c.section ? ` – ${c.section}` : ''}</option>
-          ))}
+          {classes.map((c) => <option key={c.id} value={c.id}>{classLabel(c)}</option>)}
         </select>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-zinc-800">
-              {['Exam', 'Subject', 'Class', 'Type', 'Date', 'Marks', 'Graded', 'Status', ''].map((h) => (
-                <th key={h} className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-zinc-800/50">
-                  {Array.from({ length: 9 }).map((__, j) => (
-                    <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-16 bg-zinc-800" /></td>
-                  ))}
-                </tr>
-              ))
-            ) : exams.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-12 text-center">
-                  <BookOpen className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                  <p className="text-zinc-500">No exams yet</p>
-                  <Link href="/dashboard/exams/new" className="text-blue-400 text-sm hover:underline mt-1 block">
-                    Create your first exam
-                  </Link>
-                </td>
-              </tr>
-            ) : (
-              exams.map((exam) => (
-                <tr key={exam.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
-                  <td className="px-4 py-3 text-sm font-medium text-white">{exam.name}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">{exam.subject?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">
-                    {exam.class ? `${exam.class.name}${exam.class.section ? ` – ${exam.class.section}` : ''}` : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">{TYPE_LABEL[exam.examType] ?? exam.examType}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">{new Date(exam.examDate).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">{exam.totalMarks}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">{exam._count.grades}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      exam.isPublished
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-zinc-700/50 text-zinc-400 border border-zinc-700'
-                    }`}>
-                      {exam.isPublished ? 'Published' : 'Draft'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <Link href={`/dashboard/exams/${exam.id}/marks`}
-                        className="p-1.5 rounded text-zinc-400 hover:text-blue-400 hover:bg-zinc-800 transition-colors"
-                        title="Enter marks">
-                        <ClipboardList className="w-3.5 h-3.5" />
-                      </Link>
-                      <button onClick={() => handleDelete(exam.id)}
-                        className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        rows={exams}
+        columns={columns}
+        getId={(e) => e.id}
+        loading={loading}
+        empty={
+          <EmptyState
+            icon={BookOpen}
+            title="No exams yet"
+            description="Create an exam to start entering grades."
+            action={<Link href="/dashboard/exams/new"><Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2"><Plus className="w-4 h-4" /> Create exam</Button></Link>}
+          />
+        }
+      />
     </div>
   );
 }
