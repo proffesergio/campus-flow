@@ -10,6 +10,7 @@ export interface Student {
   rollNumber: string | null;
   photoUrl: string | null;
   guardianPhone: string;
+  guardianName?: string | null;
   status: 'active' | 'inactive' | 'graduated' | 'transferred';
   class: { id: string; name: string; section: string | null };
 }
