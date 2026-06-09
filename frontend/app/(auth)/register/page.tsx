@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, ArrowRight, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -65,6 +66,7 @@ function Field({
 }
 
 export default function RegisterPage() {
+  const t = useTranslations('auth');
   const router = useRouter();
   const [shakeForm, setShakeForm] = useState(false);
 
@@ -81,7 +83,7 @@ export default function RegisterPage() {
   async function onSubmit(data: FormData) {
     const schoolSlug = toSlug(data.schoolName);
     if (!schoolSlug) {
-      toast.error('Could not generate a valid school ID from the name');
+      toast.error(t('invalidSchoolId'));
       return;
     }
     try {
@@ -99,13 +101,13 @@ export default function RegisterPage() {
         { withCredentials: true },
       );
       localStorage.setItem('campusflow_slug', schoolSlug);
-      toast.success('School registered! Please log in.');
+      toast.success(t('registrationSuccess'));
       router.push('/login');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setShakeForm(true);
       setTimeout(() => setShakeForm(false), 600);
-      toast.error(msg ?? 'Registration failed');
+      toast.error(msg ?? t('registrationFailed'));
     }
   }
 
@@ -125,7 +127,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">CampusFlow</h1>
-            <p className="text-xs" style={{ color: '#71717a' }}>Register your school</p>
+            <p className="text-xs" style={{ color: '#71717a' }}>{t('registerYourSchool')}</p>
           </div>
         </div>
 
@@ -133,7 +135,7 @@ export default function RegisterPage() {
           background: '#18181b', border: '1px solid #27272a',
           borderRadius: '16px', padding: '32px',
         }}>
-          <h2 className="text-lg font-semibold text-white mb-6">Create your school account</h2>
+          <h2 className="text-lg font-semibold text-white mb-6">{t('createSchoolAccount')}</h2>
 
           <motion.form
             onSubmit={handleSubmit(onSubmit)}
@@ -142,17 +144,17 @@ export default function RegisterPage() {
             className="space-y-4"
           >
             {/* School name */}
-            <Field label="School Name *" error={errors.schoolName?.message}>
+            <Field label={`${t('schoolName')} *`} error={errors.schoolName?.message}>
               <input
                 {...register('schoolName')}
-                placeholder="e.g. Dhaka Grammar School"
+                placeholder={t('schoolNamePlaceholder')}
                 style={inputStyle}
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                 onBlur={(e) => e.target.style.borderColor = '#27272a'}
               />
               {generatedSlug && (
                 <p className="text-xs mt-1" style={{ color: '#52525b' }}>
-                  Your school URL:{' '}
+                  {t('schoolUrl')}{' '}
                   <span style={{ color: '#60a5fa', fontFamily: 'monospace' }}>
                     {generatedSlug}.campusflow.app
                   </span>
@@ -162,38 +164,38 @@ export default function RegisterPage() {
 
             {/* Admin name */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="First Name *" error={errors.adminFirstName?.message}>
-                <input {...register('adminFirstName')} placeholder="Ahmed" style={inputStyle}
+              <Field label={`${t('firstName')} *`} error={errors.adminFirstName?.message}>
+                <input {...register('adminFirstName')} placeholder={t('firstNamePlaceholder')} style={inputStyle}
                   onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                   onBlur={(e) => e.target.style.borderColor = '#27272a'} />
               </Field>
-              <Field label="Last Name *" error={errors.adminLastName?.message}>
-                <input {...register('adminLastName')} placeholder="Rahman" style={inputStyle}
+              <Field label={`${t('lastName')} *`} error={errors.adminLastName?.message}>
+                <input {...register('adminLastName')} placeholder={t('lastNamePlaceholder')} style={inputStyle}
                   onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                   onBlur={(e) => e.target.style.borderColor = '#27272a'} />
               </Field>
             </div>
 
             {/* Admin email */}
-            <Field label="Admin Email *" error={errors.adminEmail?.message}>
-              <input {...register('adminEmail')} type="email" placeholder="admin@school.edu.bd"
+            <Field label={`${t('adminEmail')} *`} error={errors.adminEmail?.message}>
+              <input {...register('adminEmail')} type="email" placeholder={t('adminEmailPlaceholder')}
                 style={inputStyle}
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                 onBlur={(e) => e.target.style.borderColor = '#27272a'} />
             </Field>
 
             {/* Admin password */}
-            <Field label="Password *" error={errors.adminPassword?.message}>
+            <Field label={`${t('password')} *`} error={errors.adminPassword?.message}>
               <input {...register('adminPassword')} type="password"
-                placeholder="Min 8 chars, 1 uppercase, 1 number"
+                placeholder={t('passwordPlaceholder')}
                 style={inputStyle}
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                 onBlur={(e) => e.target.style.borderColor = '#27272a'} />
             </Field>
 
             {/* Phone */}
-            <Field label="Phone (optional)">
-              <input {...register('adminPhone')} type="tel" placeholder="+8801700000000"
+            <Field label={t('phone')}>
+              <input {...register('adminPhone')} type="tel" placeholder={t('phonePlaceholder')}
                 style={inputStyle}
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                 onBlur={(e) => e.target.style.borderColor = '#27272a'} />
@@ -216,8 +218,8 @@ export default function RegisterPage() {
                 }}
               >
                 {isSubmitting
-                  ? 'Registering...'
-                  : (<>Get Started <ArrowRight style={{ width: 16, height: 16 }} /></>)
+                  ? t('registering')
+                  : (<>{t('getStarted')} <ArrowRight style={{ width: 16, height: 16 }} /></>)
                 }
               </motion.button>
 
@@ -226,7 +228,7 @@ export default function RegisterPage() {
                 fontSize: '13px', color: '#71717a', textDecoration: 'none',
               }}>
                 <ArrowLeft style={{ width: 14, height: 14 }} />
-                Already have an account? Sign in
+                {t('alreadyHaveAccount')}
               </Link>
             </div>
           </motion.form>
