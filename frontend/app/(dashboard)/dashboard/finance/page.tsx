@@ -7,6 +7,7 @@ import {
   Plus, CheckCircle, ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -45,6 +46,9 @@ function fmt(v: string | number | undefined | null) {
 }
 
 export default function FinancePage() {
+  const t = useTranslations('finance');
+  const tc = useTranslations('common');
+
   const [stats, setStats] = useState<DashStats | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoiceMeta, setInvoiceMeta] = useState<InvoiceMeta | null>(null);
@@ -59,9 +63,9 @@ export default function FinancePage() {
   useEffect(() => {
     api.get<{ success: boolean; data: DashStats }>('/finance/dashboard')
       .then((r) => setStats(r.data.data))
-      .catch(() => toast.error('Failed to load dashboard stats'))
+      .catch(() => toast.error(t('failedLoadStats')))
       .finally(() => setStatsLoading(false));
-  }, []);
+  }, [t]);
 
   const fetchInvoices = useCallback(async () => {
     setInvoicesLoading(true);
@@ -73,9 +77,9 @@ export default function FinancePage() {
       );
       setInvoices(res.data.data ?? []);
       setInvoiceMeta(res.data.meta);
-    } catch { toast.error('Failed to load invoices'); }
+    } catch { toast.error(t('failedLoadInvoices')); }
     finally { setInvoicesLoading(false); }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, t]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
@@ -87,11 +91,11 @@ export default function FinancePage() {
         paidAmount: parseFloat(cashAmount),
         paymentMethod: 'cash',
       });
-      toast.success('Payment recorded');
+      toast.success(t('paymentRecorded'));
       setCashModal(null);
       setCashAmount('');
       fetchInvoices();
-    } catch { toast.error('Failed to record payment'); }
+    } catch { toast.error(t('failedRecordPayment')); }
     finally { setCashSaving(false); }
   }
 
@@ -101,12 +105,12 @@ export default function FinancePage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Finance</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Fee collection and invoice management</p>
+          <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">{t('subtitle')}</p>
         </div>
         <Link href="/dashboard/finance/fee-structures">
           <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:text-white gap-2">
-            <ExternalLink className="w-4 h-4" /> Fee Structures
+            <ExternalLink className="w-4 h-4" /> {t('feeStructures')}
           </Button>
         </Link>
       </div>
@@ -114,10 +118,10 @@ export default function FinancePage() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Collected This Month', value: stats?.collectedThisMonth, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-          { label: 'Total Collected',      value: stats?.totalCollected,     icon: DollarSign,   color: 'text-blue-400',    bg: 'bg-blue-500/10' },
-          { label: 'Outstanding',          value: stats?.totalPending,       icon: Clock,        color: 'text-yellow-400',  bg: 'bg-yellow-500/10' },
-          { label: 'Overdue',              value: stats?.totalOverdue,        icon: AlertTriangle, color: 'text-red-400',   bg: 'bg-red-500/10' },
+          { label: t('collectedThisMonth'), value: stats?.collectedThisMonth, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+          { label: t('totalCollected'),     value: stats?.totalCollected,     icon: DollarSign,   color: 'text-blue-400',    bg: 'bg-blue-500/10' },
+          { label: t('outstanding'),        value: stats?.totalPending,       icon: Clock,        color: 'text-yellow-400',  bg: 'bg-yellow-500/10' },
+          { label: t('overdue'),            value: stats?.totalOverdue,       icon: AlertTriangle, color: 'text-red-400',    bg: 'bg-red-500/10' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
@@ -136,7 +140,7 @@ export default function FinancePage() {
       {/* Monthly chart */}
       {stats && stats.monthlyData.length > 0 && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-zinc-400 mb-4">Monthly Collections</h3>
+          <h3 className="text-sm font-semibold text-zinc-400 mb-4">{t('monthlyCollections')}</h3>
           <div className="flex items-end gap-2 h-24">
             {stats.monthlyData.map((m) => (
               <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
@@ -155,18 +159,18 @@ export default function FinancePage() {
       {/* Invoices */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-zinc-300">Invoices</h3>
+          <h3 className="text-sm font-semibold text-zinc-300">{t('invoices')}</h3>
           <div className="flex gap-2">
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               className="h-8 bg-zinc-800 border border-zinc-700 rounded-lg px-2 text-xs text-white"
             >
-              <option value="">All</option>
-              <option value="pending">Pending</option>
-              <option value="paid">Paid</option>
-              <option value="overdue">Overdue</option>
-              <option value="partial">Partial</option>
+              <option value="">{t('filterAll')}</option>
+              <option value="pending">{t('filterPending')}</option>
+              <option value="paid">{t('filterPaid')}</option>
+              <option value="overdue">{t('filterOverdue')}</option>
+              <option value="partial">{t('filterPartial')}</option>
             </select>
           </div>
         </div>
@@ -175,7 +179,7 @@ export default function FinancePage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-800">
-                {['Student', 'Invoice', 'Amount', 'Due Date', 'Status', ''].map((h) => (
+                {[t('colStudent'), t('colInvoice'), t('colAmount'), t('colDueDate'), t('colStatus'), ''].map((h) => (
                   <th key={h} className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">{h}</th>
                 ))}
               </tr>
@@ -192,7 +196,7 @@ export default function FinancePage() {
               ) : invoices.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center text-zinc-500 text-sm">
-                    No invoices found
+                    {t('noInvoices')}
                   </td>
                 </tr>
               ) : (
@@ -220,7 +224,7 @@ export default function FinancePage() {
                           onClick={() => { setCashModal(inv); setCashAmount(inv.amount); }}
                           className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
                         >
-                          <CheckCircle className="w-3.5 h-3.5" /> Record Cash
+                          <CheckCircle className="w-3.5 h-3.5" /> {t('recordCash')}
                         </button>
                       )}
                     </td>
@@ -234,10 +238,10 @@ export default function FinancePage() {
         {invoiceMeta && invoiceMeta.totalPages > 1 && (
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)} className="text-zinc-400">Previous</Button>
-            <span className="text-xs text-zinc-500">Page {page} of {invoiceMeta.totalPages}</span>
+              onClick={() => setPage((p) => p - 1)} className="text-zinc-400">{tc('previous')}</Button>
+            <span className="text-xs text-zinc-500">{tc('page')} {page} {tc('of')} {invoiceMeta.totalPages}</span>
             <Button variant="ghost" size="sm" disabled={page >= invoiceMeta.totalPages}
-              onClick={() => setPage((p) => p + 1)} className="text-zinc-400">Next</Button>
+              onClick={() => setPage((p) => p + 1)} className="text-zinc-400">{tc('next')}</Button>
           </div>
         )}
       </div>
@@ -247,10 +251,10 @@ export default function FinancePage() {
         <>
           <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setCashModal(null)} />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-xl p-6 z-50 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Record Cash Payment</h3>
+            <h3 className="text-lg font-semibold text-white">{t('recordCashTitle')}</h3>
             <p className="text-sm text-zinc-400">{cashModal.title}</p>
             <div className="space-y-1.5">
-              <label className="text-sm text-zinc-300">Amount Paid (BDT)</label>
+              <label className="text-sm text-zinc-300">{t('amountPaid')}</label>
               <input
                 type="number"
                 value={cashAmount}
@@ -261,9 +265,9 @@ export default function FinancePage() {
             <div className="flex gap-3">
               <Button onClick={recordCash} disabled={cashSaving}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
-                {cashSaving ? 'Recording...' : 'Confirm Payment'}
+                {cashSaving ? t('recording') : t('confirmPayment')}
               </Button>
-              <Button variant="ghost" onClick={() => setCashModal(null)} className="text-zinc-400">Cancel</Button>
+              <Button variant="ghost" onClick={() => setCashModal(null)} className="text-zinc-400">{tc('cancel')}</Button>
             </div>
           </div>
         </>

@@ -5,22 +5,24 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Bell, GraduationCap, Menu, LogOut } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { clearRoleCookie } from '@/lib/session';
 import { toast } from 'sonner';
 import LanguageToggle from '@/components/LanguageToggle';
 
-const navItems = [
-  { href: '/parent', label: 'My Children', icon: Users, exact: true },
-  { href: '/parent/notices', label: 'Notices', icon: Bell },
-];
-
 export default function ParentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations('parent');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+
+  const navItems = [
+    { href: '/parent', label: t('myChildren'), icon: Users, exact: true },
+    { href: '/parent/notices', label: t('notices'), icon: Bell },
+  ];
 
   useEffect(() => {
     api
@@ -35,7 +37,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
       clearRoleCookie();
       router.push('/login');
     } catch {
-      toast.error('Failed to logout');
+      toast.error(t('failedLogout'));
     }
   }
 
@@ -47,7 +49,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
         </div>
         <div>
           <p className="font-bold text-white text-sm leading-none">CampusFlow</p>
-          <p className="text-xs text-emerald-400 mt-0.5">Parent Portal</p>
+          <p className="text-xs text-emerald-400 mt-0.5">{t('portal')}</p>
         </div>
       </div>
 
@@ -87,7 +89,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-red-400 hover:bg-red-950/30 transition-all"
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
-          <span>Logout</span>
+          <span>{t('logout')}</span>
         </button>
       </div>
     </div>

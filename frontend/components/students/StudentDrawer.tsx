@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useClasses } from '@/lib/hooks/useClasses';
 import type { Student } from '@/lib/hooks/useStudents';
@@ -50,6 +51,7 @@ const STEP_FIELDS: Record<string, (keyof FormData)[]> = {
 };
 
 export default function StudentDrawer({ open, onClose, onSuccess, student }: Props) {
+  const t = useTranslations('students');
   const { classes } = useClasses();
   const isEdit = !!student;
   const [submitting, setSubmitting] = useState(false);
@@ -110,10 +112,10 @@ export default function StudentDrawer({ open, onClose, onSuccess, student }: Pro
     try {
       if (isEdit) {
         await api.put(`/students/${student!.id}`, payload);
-        toast.success('Student updated');
+        toast.success(t('studentUpdated'));
       } else {
         await api.post('/students', payload);
-        toast.success('Student added');
+        toast.success(t('studentAdded'));
       }
       onSuccess();
       onClose();
@@ -129,68 +131,71 @@ export default function StudentDrawer({ open, onClose, onSuccess, student }: Pro
 
   const steps: WizardStep[] = [
     {
-      id: 'personal', title: 'Personal',
+      id: 'personal', title: t('stepPersonal'),
       content: (
         <div className="space-y-4">
           <AvatarField value={values.photoUrl} onChange={(v) => setValue('photoUrl', v, { shouldValidate: true })} initials={initials} />
           {errors.photoUrl && <p className="text-xs text-red-400 -mt-2">{errors.photoUrl.message}</p>}
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="First Name" required error={errors.firstName?.message}><Input {...register('firstName')} className={inputCls} placeholder="Ahmed" /></FormField>
-            <FormField label="Last Name" required error={errors.lastName?.message}><Input {...register('lastName')} className={inputCls} placeholder="Rahman" /></FormField>
+            <FormField label={t('firstName')} required error={errors.firstName?.message}><Input {...register('firstName')} className={inputCls} placeholder="Ahmed" /></FormField>
+            <FormField label={t('lastName')} required error={errors.lastName?.message}><Input {...register('lastName')} className={inputCls} placeholder="Rahman" /></FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Date of Birth" error={errors.dateOfBirth?.message}><Input type="date" {...register('dateOfBirth')} className={inputCls} /></FormField>
-            <FormField label="Gender" error={errors.gender?.message}>
+            <FormField label={t('dateOfBirth')} error={errors.dateOfBirth?.message}><Input type="date" {...register('dateOfBirth')} className={inputCls} /></FormField>
+            <FormField label={t('gender')} error={errors.gender?.message}>
               <select {...register('gender')} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-                <option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                <option value="">Select</option>
+                <option value="male">{t('male')}</option>
+                <option value="female">{t('female')}</option>
+                <option value="other">{t('other')}</option>
               </select>
             </FormField>
           </div>
-          <FormField label="Blood Group" error={errors.bloodGroup?.message}><Input {...register('bloodGroup')} className={`${inputCls} w-32`} placeholder="A+, O-" /></FormField>
+          <FormField label={t('bloodGroup')} error={errors.bloodGroup?.message}><Input {...register('bloodGroup')} className={`${inputCls} w-32`} placeholder="A+, O-" /></FormField>
         </div>
       ),
     },
     {
-      id: 'academic', title: 'Academic',
+      id: 'academic', title: t('stepAcademic'),
       content: (
         <div className="space-y-4">
-          <FormField label="Class" required error={errors.classId?.message}>
+          <FormField label={t('class')} required error={errors.classId?.message}>
             <Combobox options={classOptions} value={values.classId} onChange={(v) => setValue('classId', v, { shouldValidate: true })} placeholder="Select class" />
           </FormField>
-          <FormField label="Roll Number" error={errors.rollNumber?.message}><Input {...register('rollNumber')} className={inputCls} placeholder="01" /></FormField>
+          <FormField label={t('rollNumber')} error={errors.rollNumber?.message}><Input {...register('rollNumber')} className={inputCls} placeholder="01" /></FormField>
         </div>
       ),
     },
     {
-      id: 'guardian', title: 'Guardian',
+      id: 'guardian', title: t('stepGuardian'),
       content: (
         <div className="space-y-4">
-          <FormField label="Guardian Name" required error={errors.guardianName?.message}><Input {...register('guardianName')} className={inputCls} placeholder="Parent / guardian full name" /></FormField>
+          <FormField label={t('guardianName')} required error={errors.guardianName?.message}><Input {...register('guardianName')} className={inputCls} placeholder="Parent / guardian full name" /></FormField>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Guardian Phone" required error={errors.guardianPhone?.message}><Input {...register('guardianPhone')} className={inputCls} placeholder="+880…" /></FormField>
-            <FormField label="Guardian Email" error={errors.guardianEmail?.message}><Input {...register('guardianEmail')} type="email" className={inputCls} placeholder="parent@email.com" /></FormField>
+            <FormField label={t('guardianPhone')} required error={errors.guardianPhone?.message}><Input {...register('guardianPhone')} className={inputCls} placeholder="+880…" /></FormField>
+            <FormField label={t('guardianEmail')} error={errors.guardianEmail?.message}><Input {...register('guardianEmail')} type="email" className={inputCls} placeholder="parent@email.com" /></FormField>
           </div>
-          <FormField label="Address" error={errors.address?.message}><Input {...register('address')} className={inputCls} placeholder="House, Road, Area, City" /></FormField>
+          <FormField label={t('address')} error={errors.address?.message}><Input {...register('address')} className={inputCls} placeholder="House, Road, Area, City" /></FormField>
         </div>
       ),
     },
     {
-      id: 'review', title: 'Review',
+      id: 'review', title: t('stepReview'),
       content: (
         <div className="space-y-4">
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4 text-sm space-y-1.5">
             <p className="text-white font-medium">{values.firstName} {values.lastName}</p>
-            <p className="text-zinc-400">Class: {classOptions.find((c) => c.value === values.classId)?.label ?? '—'}{values.rollNumber ? ` · Roll ${values.rollNumber}` : ''}</p>
-            <p className="text-zinc-400">Guardian: {values.guardianName || '—'} · {values.guardianPhone || '—'}</p>
+            <p className="text-zinc-400">{t('class')}: {classOptions.find((c) => c.value === values.classId)?.label ?? '—'}{values.rollNumber ? ` · Roll ${values.rollNumber}` : ''}</p>
+            <p className="text-zinc-400">{t('guardianName')}: {values.guardianName || '—'} · {values.guardianPhone || '—'}</p>
           </div>
           {!isEdit && (
             <div className="border border-zinc-800 rounded-lg p-4 space-y-3">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" {...register('createPortalAccess')} className="rounded border-zinc-600" />
-                <span className="text-sm text-zinc-300">Create student portal account</span>
+                <span className="text-sm text-zinc-300">{t('createPortalAccess')}</span>
               </label>
               {values.createPortalAccess && (
-                <FormField label="Portal Email" error={errors.portalEmail?.message}>
+                <FormField label={t('portalEmail')} error={errors.portalEmail?.message}>
                   <Input {...register('portalEmail')} type="email" className={inputCls} placeholder="student@email.com" />
                 </FormField>
               )}
@@ -205,8 +210,8 @@ export default function StudentDrawer({ open, onClose, onSuccess, student }: Pro
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="right" className="w-full max-w-lg overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{isEdit ? 'Edit Student' : 'Add Student'}</SheetTitle>
-          <SheetDescription>{isEdit ? 'Update student details.' : 'Fill in the details to enrol a new student.'}</SheetDescription>
+          <SheetTitle>{isEdit ? t('editStudent') : t('addStudent')}</SheetTitle>
+          <SheetDescription>{isEdit ? t('editStudentDesc') : t('addStudentDesc')}</SheetDescription>
         </SheetHeader>
         <div className="px-6 py-4">
           <Wizard
@@ -214,7 +219,7 @@ export default function StudentDrawer({ open, onClose, onSuccess, student }: Pro
             onValidateStep={validateStep}
             onSubmit={handleSubmit(onSubmit)}
             submitting={submitting}
-            submitLabel={isEdit ? 'Save Changes' : 'Add Student'}
+            submitLabel={isEdit ? t('submitSave') : t('submitAdd')}
           />
         </div>
       </SheetContent>

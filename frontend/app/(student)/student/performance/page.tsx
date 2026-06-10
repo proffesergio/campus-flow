@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BarChart3, Sparkles, RotateCcw, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface Grade {
@@ -24,6 +25,7 @@ interface RankData {
 }
 
 export default function PerformancePage() {
+  const t = useTranslations('student');
   const [grades, setGrades] = useState<Grade[]>([]);
   const [rank, setRank] = useState<RankData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export default function PerformancePage() {
       );
 
       if (!res.ok || !res.body) {
-        setAiText('Could not generate summary. Make sure the Anthropic API key is configured.');
+        setAiText(t('performance.aiError'));
         setAiDone(true);
         return;
       }
@@ -96,7 +98,7 @@ export default function PerformancePage() {
       setAiDone(true);
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
-        setAiText('Failed to connect to AI service.');
+        setAiText(t('performance.aiConnectError'));
         setAiDone(true);
       }
     } finally {
@@ -128,7 +130,7 @@ export default function PerformancePage() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <h1 className="text-xl font-bold text-white flex items-center gap-2">
         <BarChart3 className="w-5 h-5 text-purple-400" />
-        My Performance
+        {t('performance.title')}
       </h1>
 
       {loading ? (
@@ -142,25 +144,25 @@ export default function PerformancePage() {
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{overallAvg !== null ? `${overallAvg}%` : '—'}</p>
-              <p className="text-xs text-zinc-500 mt-1">Overall Average</p>
+              <p className="text-xs text-zinc-500 mt-1">{t('performance.overallAverage')}</p>
             </div>
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
               <div className="flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4 text-yellow-400" />
                 <p className="text-2xl font-bold text-white">{rank?.rank ?? '—'}</p>
               </div>
-              <p className="text-xs text-zinc-500 mt-1">Class Rank {rank?.total ? `/ ${rank.total}` : ''}</p>
+              <p className="text-xs text-zinc-500 mt-1">{t('performance.classRank')} {rank?.total ? `/ ${rank.total}` : ''}</p>
             </div>
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{grades.length}</p>
-              <p className="text-xs text-zinc-500 mt-1">Exams Taken</p>
+              <p className="text-xs text-zinc-500 mt-1">{t('performance.examsTaken')}</p>
             </div>
           </div>
 
           {/* Subject breakdown */}
           {subjects.length > 0 && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-              <h2 className="font-semibold text-white mb-4 text-sm">Subject Averages</h2>
+              <h2 className="font-semibold text-white mb-4 text-sm">{t('performance.subjectAverages')}</h2>
               <div className="space-y-3">
                 {subjects.map((sub) => (
                   <div key={sub.name}>
@@ -193,7 +195,7 @@ export default function PerformancePage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-white text-sm flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-400" />
-                AI Performance Summary
+                {t('performance.aiSummaryTitle')}
               </h2>
               {(aiText || aiDone) && (
                 <button
@@ -201,7 +203,7 @@ export default function PerformancePage() {
                   className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
                 >
                   <RotateCcw className="w-3 h-3" />
-                  Clear
+                  {t('performance.clear')}
                 </button>
               )}
             </div>
@@ -212,7 +214,7 @@ export default function PerformancePage() {
                 className="w-full flex items-center justify-center gap-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-400 text-sm font-medium py-3 rounded-lg transition-colors"
               >
                 <Sparkles className="w-4 h-4" />
-                Generate AI Performance Summary
+                {t('performance.generateSummary')}
               </button>
             )}
 

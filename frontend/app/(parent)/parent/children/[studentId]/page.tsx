@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   ArrowLeft,
   CalendarCheck,
@@ -42,6 +42,8 @@ const STATUS_COLOR: Record<string, string> = {
 export default function ChildDetail() {
   const { studentId } = useParams<{ studentId: string }>();
   const locale = useLocale() as AppLocale;
+  const t = useTranslations('parent');
+  const ts = useTranslations('status');
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [tab, setTab] = useState<Tab>('attendance');
   const [tabData, setTabData] = useState<Record<string, unknown[]>>({});
@@ -97,9 +99,9 @@ export default function ChildDetail() {
   if (!dash) {
     return (
       <div className="max-w-4xl mx-auto p-8 text-center text-zinc-400">
-        <p>This child could not be found for your account.</p>
+        <p>{t('childNotFound')}</p>
         <Link href="/parent" className="text-emerald-400 text-sm mt-2 inline-block">
-          ← Back to my children
+          ← {t('backToChildren')}
         </Link>
       </div>
     );
@@ -111,7 +113,7 @@ export default function ChildDetail() {
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
       <Link href="/parent" className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-200">
-        <ArrowLeft className="w-4 h-4" /> My Children
+        <ArrowLeft className="w-4 h-4" /> {t('myChildren')}
       </Link>
 
       <div>
@@ -120,28 +122,28 @@ export default function ChildDetail() {
         </h1>
         <p className="text-sm text-zinc-400 mt-1">
           {cls}
-          {s.rollNumber ? ` · Roll ${s.rollNumber}` : ''}
+          {s.rollNumber ? ` · ${t('roll')} ${s.rollNumber}` : ''}
           {s.class ? ` · ${s.class.academicYear}` : ''}
         </p>
       </div>
 
       {/* Overview cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatCard icon={CalendarCheck} label="Attendance" color="text-emerald-400"
+        <StatCard icon={CalendarCheck} label={t('attendance')} color="text-emerald-400"
           value={dash.attendancePct != null ? formatPercent(dash.attendancePct, locale) : '—'} />
-        <StatCard icon={Trophy} label="Class Rank" color="text-amber-400"
+        <StatCard icon={Trophy} label={t('classRank')} color="text-amber-400"
           value={dash.classRank != null ? `${formatNumber(dash.classRank, locale)} / ${formatNumber(dash.classSize, locale)}` : '—'} />
-        <StatCard icon={Wallet} label="Pending Fees" color="text-red-400"
+        <StatCard icon={Wallet} label={t('pendingFees')} color="text-red-400"
           value={formatCurrency(dash.pendingFeesAmount, locale)}
-          sub={dash.pendingFeesCount > 0 ? `${formatNumber(dash.pendingFeesCount, locale)} invoice(s)` : 'All clear'} />
+          sub={dash.pendingFeesCount > 0 ? t('invoicesCount', { count: formatNumber(dash.pendingFeesCount, locale) }) : t('allClear')} />
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-zinc-800">
         {([
-          ['attendance', 'Attendance', ClipboardList],
-          ['grades', 'Results', BookOpen],
-          ['fees', 'Fees', Receipt],
+          ['attendance', t('tabAttendance'), ClipboardList],
+          ['grades', t('tabResults'), BookOpen],
+          ['fees', t('tabFees'), Receipt],
         ] as [Tab, string, typeof ClipboardList][]).map(([key, label, Icon]) => (
           <button
             key={key}
@@ -160,11 +162,11 @@ export default function ChildDetail() {
       {tabLoading && <div className="h-24 rounded-xl bg-zinc-900 border border-zinc-800 animate-pulse" />}
 
       {!tabLoading && tab === 'attendance' && (
-        <Section empty={(tabData.attendance ?? []).length === 0} emptyText="No attendance records yet.">
+        <Section empty={(tabData.attendance ?? []).length === 0} emptyText={t('noAttendance')}>
           {(tabData.attendance as AttRec[] | undefined)?.map((a, i) => (
             <Row key={i}
               left={formatDate(a.date, locale)}
-              right={<span className={`capitalize font-medium ${STATUS_COLOR[a.status] ?? 'text-zinc-300'}`}>{a.status}</span>}
+              right={<span className={`font-medium ${STATUS_COLOR[a.status] ?? 'text-zinc-300'}`}>{ts(a.status)}</span>}
               sub={a.note ?? undefined}
             />
           ))}
@@ -172,13 +174,13 @@ export default function ChildDetail() {
       )}
 
       {!tabLoading && tab === 'grades' && (
-        <Section empty={(tabData.grades ?? []).length === 0} emptyText="No published results yet.">
+        <Section empty={(tabData.grades ?? []).length === 0} emptyText={t('noResults')}>
           {(tabData.grades as GradeRec[] | undefined)?.map((g, i) => (
             <Row key={i}
               left={`${g.exam.subject.name} — ${g.exam.name}`}
               right={
                 g.isAbsent
-                  ? <span className="text-red-400 font-medium">Absent</span>
+                  ? <span className="text-red-400 font-medium">{t('absent')}</span>
                   : <span className="text-white font-medium">{g.marksObtained != null ? formatNumber(g.marksObtained, locale) : '—'} / {formatNumber(g.exam.totalMarks, locale)}{g.grade ? ` (${g.grade})` : ''}</span>
               }
             />
@@ -187,16 +189,16 @@ export default function ChildDetail() {
       )}
 
       {!tabLoading && tab === 'fees' && (
-        <Section empty={(tabData.fees ?? []).length === 0} emptyText="No invoices.">
+        <Section empty={(tabData.fees ?? []).length === 0} emptyText={t('noInvoices')}>
           {(tabData.fees as InvoiceRec[] | undefined)?.map((inv, i) => (
             <Row key={i}
               left={inv.title}
-              sub={`Due ${formatDate(inv.dueDate, locale)}`}
+              sub={t('due', { date: formatDate(inv.dueDate, locale) })}
               right={
                 <span className="text-right">
                   <span className="block text-white font-medium">{formatCurrency(Number(inv.amount), locale)}</span>
-                  <span className={`text-xs capitalize ${inv.status === 'paid' ? 'text-emerald-400' : inv.status === 'overdue' ? 'text-red-400' : 'text-amber-400'}`}>
-                    {inv.status}
+                  <span className={`text-xs ${inv.status === 'paid' ? 'text-emerald-400' : inv.status === 'overdue' ? 'text-red-400' : 'text-amber-400'}`}>
+                    {ts(inv.status)}
                   </span>
                 </span>
               }

@@ -3,12 +3,21 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { Rocket, Check, X } from 'lucide-react';
-import { onboardingSteps, OnboardingCounts } from '@/lib/dashboard/helpers';
+import { onboardingSteps, OnboardingCounts, OnboardingStep } from '@/lib/dashboard/helpers';
 
 const DISMISS_KEY = 'cf_onboarding_dismissed';
 
+const STEP_KEY_MAP: Record<OnboardingStep['key'], string> = {
+  classes: 'stepClasses',
+  subjects: 'stepSubjects',
+  students: 'stepStudents',
+  exams: 'stepExams',
+};
+
 export default function OnboardingChecklist({ counts }: { counts: OnboardingCounts }) {
+  const t = useTranslations('dashboard');
   const [dismissed, setDismissed] = useState(
     typeof window !== 'undefined' && localStorage.getItem(DISMISS_KEY) === '1',
   );
@@ -30,8 +39,8 @@ export default function OnboardingChecklist({ counts }: { counts: OnboardingCoun
     >
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-white inline-flex items-center gap-2">
-          <Rocket className="w-4 h-4 text-blue-400" /> Finish setting up your school
-          <span className="text-blue-400 font-medium">· {doneCount} of {steps.length} done</span>
+          <Rocket className="w-4 h-4 text-blue-400" /> {t('onboardingTitle')}
+          <span className="text-blue-400 font-medium">· {t('onboardingDone', { done: doneCount, total: steps.length })}</span>
         </p>
         <button onClick={dismiss} className="text-zinc-500 hover:text-zinc-300" aria-label="Dismiss">
           <X className="w-4 h-4" />
@@ -41,12 +50,12 @@ export default function OnboardingChecklist({ counts }: { counts: OnboardingCoun
         {steps.map((s) =>
           s.done ? (
             <span key={s.key} className="inline-flex items-center gap-1 text-xs text-emerald-400 border border-emerald-500/30 rounded-full px-3 py-1">
-              <Check className="w-3 h-3" /> {s.label}
+              <Check className="w-3 h-3" /> {t(STEP_KEY_MAP[s.key])}
             </span>
           ) : (
             <Link key={s.key} href={s.href}
               className="inline-flex items-center gap-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-full px-3 py-1 transition-colors">
-              → {s.label}
+              → {t(STEP_KEY_MAP[s.key])}
             </Link>
           ),
         )}

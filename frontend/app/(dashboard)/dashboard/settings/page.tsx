@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Palette, ChevronRight, Building2, Users, Bell } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } } };
 const fadeUp = {
@@ -10,55 +11,57 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
 };
 
-const settings = [
-  {
-    label: 'Appearance',
-    description: 'Brand colors, logo, and theme',
-    href: '/dashboard/settings/appearance',
-    icon: Palette,
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/20',
-    ready: true,
-  },
-  {
-    label: 'School Profile',
-    description: 'Name, address, and contact details',
-    href: '/dashboard/settings/appearance',
-    icon: Building2,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/20',
-    ready: true,
-  },
-  {
-    label: 'Team & Roles',
-    description: 'Manage staff accounts and permissions',
-    href: '#',
-    icon: Users,
-    color: 'text-purple-400',
-    bg: 'bg-purple-500/10',
-    border: 'border-purple-500/20',
-    ready: false,
-  },
-  {
-    label: 'Notifications',
-    description: 'Email and in-app notification preferences',
-    href: '#',
-    icon: Bell,
-    color: 'text-orange-400',
-    bg: 'bg-orange-500/10',
-    border: 'border-orange-500/20',
-    ready: false,
-  },
-];
-
 export default function SettingsPage() {
+  const t = useTranslations('settings');
+
+  const settings = [
+    {
+      label: t('items.appearance'),
+      description: t('items.appearanceDesc'),
+      href: '/dashboard/settings/appearance',
+      icon: Palette,
+      color: 'text-blue-400',
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/20',
+      ready: true,
+    },
+    {
+      label: t('items.schoolProfile'),
+      description: t('items.schoolProfileDesc'),
+      href: '/dashboard/settings/appearance',
+      icon: Building2,
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/20',
+      ready: true,
+    },
+    {
+      label: t('items.teamRoles'),
+      description: t('items.teamRolesDesc'),
+      href: '#',
+      icon: Users,
+      color: 'text-purple-400',
+      bg: 'bg-purple-500/10',
+      border: 'border-purple-500/20',
+      ready: false,
+    },
+    {
+      label: t('items.notificationPrefs'),
+      description: t('items.notificationPrefsDesc'),
+      href: '#',
+      icon: Bell,
+      color: 'text-orange-400',
+      bg: 'bg-orange-500/10',
+      border: 'border-orange-500/20',
+      ready: false,
+    },
+  ];
+
   return (
     <div className="p-6 space-y-6 min-h-screen" style={{ background: 'linear-gradient(180deg, #09090b 0%, #0a0a0f 100%)' }}>
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <h1 className="text-3xl font-bold text-white">Settings</h1>
-        <p className="text-zinc-400 text-sm mt-1">Manage your school&apos;s configuration and preferences.</p>
+        <h1 className="text-3xl font-bold text-white">{t('title')}</h1>
+        <p className="text-zinc-400 text-sm mt-1">{t('subtitle')}</p>
       </motion.div>
 
       <motion.div variants={stagger} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl">
@@ -77,7 +80,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-white">{s.label}</p>
                   {!s.ready && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-500">Soon</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-500">{t('soon')}</span>
                   )}
                 </div>
                 <p className="text-xs text-zinc-500 mt-1">{s.description}</p>

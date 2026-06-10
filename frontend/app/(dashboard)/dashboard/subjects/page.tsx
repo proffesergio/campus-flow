@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, BookOpen, Pencil, Trash2, Loader2, Library } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,9 @@ function classLabel(c: ClassRow) {
 }
 
 export default function SubjectsPage() {
+  const t = useTranslations('subjects');
+  const tc = useTranslations('common');
+
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [classId, setClassId] = useState('');
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -48,9 +52,9 @@ export default function SubjectsPage() {
         setClasses(list);
         if (list.length > 0) setClassId(list[0].id);
       })
-      .catch(() => toast.error('Failed to load classes'))
+      .catch(() => toast.error(t('failedLoadClasses')))
       .finally(() => setLoadingClasses(false));
-  }, []);
+  }, [t]);
 
   const fetchSubjects = useCallback(async () => {
     if (!classId) { setSubjects([]); return; }
@@ -59,11 +63,11 @@ export default function SubjectsPage() {
       const res = await api.get<{ success: boolean; data: Subject[] }>(`/exams/subjects?classId=${classId}`);
       setSubjects(res.data.data ?? []);
     } catch {
-      toast.error('Failed to load subjects');
+      toast.error(t('failedLoad'));
     } finally {
       setLoadingSubjects(false);
     }
-  }, [classId]);
+  }, [classId, t]);
 
   useEffect(() => { fetchSubjects(); }, [fetchSubjects]);
 
@@ -82,8 +86,8 @@ export default function SubjectsPage() {
   }
 
   async function handleSave() {
-    if (!classId) { toast.error('Select a class first'); return; }
-    if (!form.name.trim()) { toast.error('Subject name is required'); return; }
+    if (!classId) { toast.error(t('selectClassFirst')); return; }
+    if (!form.name.trim()) { toast.error(t('nameRequired')); return; }
     setSaving(true);
     const base = {
       name: form.name.trim(),
@@ -93,10 +97,10 @@ export default function SubjectsPage() {
     try {
       if (form.id) {
         await api.put(`/exams/subjects/${form.id}`, base);
-        toast.success('Subject updated');
+        toast.success(t('subjectUpdated'));
       } else {
         await api.post('/exams/subjects', { ...base, classId });
-        toast.success('Subject created');
+        toast.success(t('subjectCreated'));
       }
       setOpen(false);
       fetchSubjects();
@@ -109,37 +113,41 @@ export default function SubjectsPage() {
   }
 
   async function handleDelete(s: Subject) {
-    if (!confirm(`Delete subject "${s.name}"? This cannot be undone.`)) return;
+    if (!confirm(t('confirmDelete', { name: s.name }))) return;
     try {
       await api.delete(`/exams/subjects/${s.id}`);
-      toast.success('Subject deleted');
+      toast.success(t('subjectDeleted'));
       fetchSubjects();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? 'Failed to delete subject');
+      toast.error(msg ?? t('failedDelete'));
     }
   }
+
+  const currentClass = classes.find((c) => c.id === classId);
 
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Subjects"
-        subtitle="Manage subjects for each class"
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <Button onClick={openCreate} disabled={!classId} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-            <Plus className="w-4 h-4" /> Add Subject
+            <Plus className="w-4 h-4" /> {t('addSubject')}
           </Button>
         }
       />
 
       {/* Class selector */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Label className="text-zinc-400">Class</Label>
+        <Label className="text-zinc-400">{t('classLabel')}</Label>
         {loadingClasses ? (
           <Skeleton className="h-10 w-48 bg-zinc-800" />
         ) : classes.length === 0 ? (
           <p className="text-sm text-zinc-500">
-            No classes yet — create one on the <a href="/dashboard/classes" className="text-blue-400 hover:underline">Classes</a> page first.
+            {t('noClassesYet')}{' '}
+            <a href="/dashboard/classes" className="text-blue-400 hover:underline">{t('noClassesYetLink')}</a>
+            {' '}{t('noClassesYetSuffix')}
           </p>
         ) : (
           <select
@@ -164,10 +172,10 @@ export default function SubjectsPage() {
       ) : !classId ? null : subjects.length === 0 ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl py-16 text-center">
           <Library className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
-          <p className="text-zinc-400 font-medium">No subjects for this class</p>
-          <p className="text-zinc-600 text-sm mt-1">Add subjects so they appear in exams and practice materials.</p>
+          <p className="text-zinc-400 font-medium">{t('noSubjects')}</p>
+          <p className="text-zinc-600 text-sm mt-1">{t('noSubjectsDesc')}</p>
           <Button onClick={openCreate} className="mt-4 bg-blue-600 hover:bg-blue-700 text-white gap-2">
-            <Plus className="w-4 h-4" /> Add subject
+            <Plus className="w-4 h-4" /> {t('addFirstSubject')}
           </Button>
         </div>
       ) : (
@@ -192,7 +200,7 @@ export default function SubjectsPage() {
                   <div className="min-w-0">
                     <p className="font-semibold text-white truncate">{s.name}</p>
                     <p className="text-xs text-zinc-500">
-                      {s.code ? s.code : 'No code'}{s.creditHours != null ? ` · ${s.creditHours} cr` : ''}
+                      {s.code ? s.code : t('noCode')}{s.creditHours != null ? ` · ${t('creditHours', { count: s.creditHours })}` : ''}
                     </p>
                   </div>
                 </div>
@@ -208,7 +216,7 @@ export default function SubjectsPage() {
                 </div>
               </div>
               {s._count.exams > 0 && (
-                <p className="text-xs text-zinc-600 mt-3">{s._count.exams} exam{s._count.exams === 1 ? '' : 's'}</p>
+                <p className="text-xs text-zinc-600 mt-3">{t('exams', { count: s._count.exams })}</p>
               )}
             </motion.div>
           ))}
@@ -221,15 +229,17 @@ export default function SubjectsPage() {
           {open && (
             <DialogContent>
               <DialogHeader>
-                <DialogTitle className="text-white">{form.id ? 'Edit Subject' : 'Add Subject'}</DialogTitle>
+                <DialogTitle className="text-white">{form.id ? t('editSubjectTitle') : t('addSubjectTitle')}</DialogTitle>
                 <DialogDescription>
-                  {form.id ? 'Update the subject details.' : `Add a subject to ${classes.find((c) => c.id === classId) ? classLabel(classes.find((c) => c.id === classId)!) : 'this class'}.`}
+                  {form.id
+                    ? t('editSubjectDesc')
+                    : t('addSubjectDesc', { className: currentClass ? classLabel(currentClass) : 'this class' })}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label>Subject Name *</Label>
+                  <Label>{t('subjectName')} *</Label>
                   <Input
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -239,7 +249,7 @@ export default function SubjectsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Code</Label>
+                    <Label>{t('code')}</Label>
                     <Input
                       value={form.code}
                       onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
@@ -247,7 +257,7 @@ export default function SubjectsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Credit Hours</Label>
+                    <Label>{t('creditHoursLabel')}</Label>
                     <Input
                       type="number"
                       value={form.creditHours}
@@ -260,11 +270,11 @@ export default function SubjectsPage() {
 
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving} className="text-zinc-400">
-                  Cancel
+                  {tc('cancel')}
                 </Button>
                 <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {form.id ? 'Save Changes' : 'Create Subject'}
+                  {form.id ? t('submitSave') : t('submitCreate')}
                 </Button>
               </DialogFooter>
             </DialogContent>

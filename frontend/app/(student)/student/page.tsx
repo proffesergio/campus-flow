@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import {
   ClipboardCheck,
   Trophy,
@@ -47,14 +48,8 @@ const card = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
 };
 
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
-
 export default function StudentDashboard() {
+  const t = useTranslations('student');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,6 +59,13 @@ export default function StudentDashboard() {
       .catch(() => null)
       .finally(() => setLoading(false));
   }, []);
+
+  function getGreeting() {
+    const h = new Date().getHours();
+    if (h < 12) return t('home.greetingMorning');
+    if (h < 17) return t('home.greetingAfternoon');
+    return t('home.greetingEvening');
+  }
 
   if (loading) {
     return (
@@ -104,16 +106,16 @@ export default function StudentDashboard() {
         <motion.div variants={card} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <ClipboardCheck className="w-4 h-4 text-green-400" />
-            <span className="text-xs text-zinc-400">Attendance</span>
+            <span className="text-xs text-zinc-400">{t('home.statAttendance')}</span>
           </div>
           <p className="text-2xl font-bold text-white">
             {attPct !== null ? `${attPct}%` : '—'}
           </p>
-          <p className="text-xs text-zinc-500 mt-1">Overall rate</p>
+          <p className="text-xs text-zinc-500 mt-1">{t('home.statOverallRate')}</p>
           {attPct != null && attPct < 75 && (
             <div className="flex items-center gap-1 mt-2 text-amber-400">
               <AlertTriangle className="w-3 h-3" />
-              <span className="text-xs">Below threshold</span>
+              <span className="text-xs">{t('home.statBelowThreshold')}</span>
             </div>
           )}
         </motion.div>
@@ -121,7 +123,7 @@ export default function StudentDashboard() {
         <motion.div variants={card} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="w-4 h-4 text-yellow-400" />
-            <span className="text-xs text-zinc-400">Class Rank</span>
+            <span className="text-xs text-zinc-400">{t('home.statClassRank')}</span>
           </div>
           <p className="text-2xl font-bold text-white">
             {data?.classRank ?? '—'}
@@ -129,29 +131,31 @@ export default function StudentDashboard() {
               <span className="text-sm text-zinc-500 ml-1">/ {data.classSize}</span>
             )}
           </p>
-          <p className="text-xs text-zinc-500 mt-1">By average grade</p>
+          <p className="text-xs text-zinc-500 mt-1">{t('home.statByAvgGrade')}</p>
         </motion.div>
 
         <motion.div variants={card} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <DollarSign className="w-4 h-4 text-red-400" />
-            <span className="text-xs text-zinc-400">Pending Fees</span>
+            <span className="text-xs text-zinc-400">{t('home.statPendingFees')}</span>
           </div>
           <p className="text-2xl font-bold text-white">
             ৳{(data?.pendingFeesAmount ?? 0).toLocaleString()}
           </p>
           <p className="text-xs text-zinc-500 mt-1">
-            {data?.pendingFeesCount ?? 0} invoice{(data?.pendingFeesCount ?? 0) !== 1 ? 's' : ''}
+            {(data?.pendingFeesCount ?? 0) === 1
+              ? t('home.invoiceCount_one', { count: data?.pendingFeesCount ?? 0 })
+              : t('home.invoiceCount_other', { count: data?.pendingFeesCount ?? 0 })}
           </p>
         </motion.div>
 
         <motion.div variants={card} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <CalendarDays className="w-4 h-4 text-blue-400" />
-            <span className="text-xs text-zinc-400">Upcoming Exams</span>
+            <span className="text-xs text-zinc-400">{t('home.statUpcomingExams')}</span>
           </div>
           <p className="text-2xl font-bold text-white">{data?.upcomingExams?.length ?? 0}</p>
-          <p className="text-xs text-zinc-500 mt-1">Scheduled ahead</p>
+          <p className="text-xs text-zinc-500 mt-1">{t('home.statScheduledAhead')}</p>
         </motion.div>
       </motion.div>
 
@@ -161,14 +165,14 @@ export default function StudentDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-white flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-blue-400" />
-              Upcoming Exams
+              {t('home.upcomingExams')}
             </h2>
             <Link href="/student/exams" className="text-xs text-blue-400 hover:underline">
-              View all
+              {t('home.viewAll')}
             </Link>
           </div>
           {!data?.upcomingExams?.length ? (
-            <p className="text-sm text-zinc-500 text-center py-6">No upcoming exams</p>
+            <p className="text-sm text-zinc-500 text-center py-6">{t('home.noUpcomingExams')}</p>
           ) : (
             <div className="space-y-3">
               {data.upcomingExams.slice(0, 4).map((exam) => (
@@ -198,14 +202,14 @@ export default function StudentDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-white flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-indigo-400" />
-              Recent Grades
+              {t('home.recentGrades')}
             </h2>
             <Link href="/student/grades" className="text-xs text-blue-400 hover:underline">
-              View all
+              {t('home.viewAll')}
             </Link>
           </div>
           {!data?.recentGrades?.length ? (
-            <p className="text-sm text-zinc-500 text-center py-6">No grades yet</p>
+            <p className="text-sm text-zinc-500 text-center py-6">{t('home.noGradesYet')}</p>
           ) : (
             <div className="space-y-3">
               {data.recentGrades.slice(0, 4).map((g) => {
@@ -224,7 +228,7 @@ export default function StudentDashboard() {
                     </div>
                     <div className="flex-shrink-0">
                       {g.isAbsent ? (
-                        <span className="text-xs bg-zinc-700 text-zinc-400 px-2 py-0.5 rounded">Absent</span>
+                        <span className="text-xs bg-zinc-700 text-zinc-400 px-2 py-0.5 rounded">{t('grades.absent')}</span>
                       ) : pct !== null ? (
                         <span
                           className={`text-xs font-bold px-2 py-0.5 rounded ${
@@ -253,14 +257,14 @@ export default function StudentDashboard() {
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
         <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-indigo-400" />
-          Quick Actions
+          {t('home.quickActions')}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { href: '/student/ai-assistant', label: 'Ask AI Tutor', icon: '🤖', color: 'indigo' },
-            { href: '/student/practice/generate', label: 'Practice Test', icon: '📝', color: 'blue' },
-            { href: '/student/performance', label: 'My Performance', icon: '📊', color: 'purple' },
-            { href: '/student/fees', label: 'View Fees', icon: '💰', color: 'amber' },
+            { href: '/student/ai-assistant', label: t('home.askAiTutor'), icon: '🤖', color: 'indigo' },
+            { href: '/student/practice/generate', label: t('home.practiceTest'), icon: '📝', color: 'blue' },
+            { href: '/student/performance', label: t('home.myPerformance'), icon: '📊', color: 'purple' },
+            { href: '/student/fees', label: t('home.viewFees'), icon: '💰', color: 'amber' },
           ].map((a) => (
             <Link
               key={a.href}

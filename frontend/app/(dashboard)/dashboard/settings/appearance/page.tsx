@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Users, Bell, ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface SchoolSettings {
@@ -28,8 +29,8 @@ const DEFAULTS: SchoolSettings = {
 };
 
 function ColorField({
-  label, value, onChange,
-}: { label: string; value: string; onChange: (v: string) => void }) {
+  label, value, onChange, invalidMsg,
+}: { label: string; value: string; onChange: (v: string) => void; invalidMsg: string }) {
   const valid = HEX_RE.test(value);
   return (
     <div className="space-y-1.5">
@@ -56,12 +57,14 @@ function ColorField({
           placeholder="#3B82F6"
         />
       </div>
-      {!valid && <p className="text-xs text-red-400">Enter a valid hex color (e.g. #3B82F6)</p>}
+      {!valid && <p className="text-xs text-red-400">{invalidMsg}</p>}
     </div>
   );
 }
 
 export default function AppearanceSettingsPage() {
+  const t = useTranslations('settings');
+
   const [form, setForm] = useState<SchoolSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -79,9 +82,9 @@ export default function AppearanceSettingsPage() {
           logoUrl: d.logoUrl ?? null,
         });
       })
-      .catch(() => toast.error('Failed to load appearance settings'))
+      .catch(() => toast.error(t('failedLoad')))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const set = useCallback(<K extends keyof SchoolSettings>(key: K, value: SchoolSettings[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -91,23 +94,23 @@ export default function AppearanceSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      toast.error('Please choose an image file');
+      toast.error(t('logoNotImage'));
       return;
     }
     if (file.size > MAX_LOGO_BYTES) {
-      toast.error('Logo must be under 1MB');
+      toast.error(t('logoTooLarge'));
       if (fileRef.current) fileRef.current.value = '';
       return;
     }
     const reader = new FileReader();
     reader.onload = () => set('logoUrl', reader.result as string);
-    reader.onerror = () => toast.error('Could not read the image');
+    reader.onerror = () => toast.error(t('logoReadError'));
     reader.readAsDataURL(file);
   }
 
   async function handleSave() {
     if (!HEX_RE.test(form.primaryColor) || !HEX_RE.test(form.secondaryColor)) {
-      toast.error('Fix the color values before saving');
+      toast.error(t('invalidColors'));
       return;
     }
     setSaving(true);
@@ -118,9 +121,9 @@ export default function AppearanceSettingsPage() {
         secondaryColor: form.secondaryColor,
         logoUrl: form.logoUrl,
       });
-      toast.success('Appearance updated');
+      toast.success(t('appearanceUpdated'));
     } catch {
-      toast.error('Failed to save appearance settings');
+      toast.error(t('failedSave'));
     } finally {
       setSaving(false);
     }
@@ -133,13 +136,13 @@ export default function AppearanceSettingsPage() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <Link href="/dashboard/settings" className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors mb-3">
-          <ChevronLeft className="w-3.5 h-3.5" /> Settings
+          <ChevronLeft className="w-3.5 h-3.5" /> {t('backToSettings')}
         </Link>
         <div className="flex items-center gap-2">
           <Palette className="w-5 h-5 text-blue-400" />
-          <h1 className="text-2xl font-bold text-white">Appearance</h1>
+          <h1 className="text-2xl font-bold text-white">{t('appearanceTitle')}</h1>
         </div>
-        <p className="text-zinc-400 text-sm mt-1">Customize your school&apos;s branding — colors and logo.</p>
+        <p className="text-zinc-400 text-sm mt-1">{t('appearanceSubtitle')}</p>
       </motion.div>
 
       {loading ? (
@@ -155,7 +158,7 @@ export default function AppearanceSettingsPage() {
 
             {/* School name */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-300">School Name</label>
+              <label className="text-sm font-medium text-zinc-300">{t('schoolName')}</label>
               <input
                 type="text"
                 value={name}
@@ -166,12 +169,12 @@ export default function AppearanceSettingsPage() {
               />
             </div>
 
-            <ColorField label="Primary Color" value={primaryColor} onChange={(v) => set('primaryColor', v)} />
-            <ColorField label="Secondary Color" value={secondaryColor} onChange={(v) => set('secondaryColor', v)} />
+            <ColorField label={t('primaryColor')} value={primaryColor} onChange={(v) => set('primaryColor', v)} invalidMsg={t('invalidHex')} />
+            <ColorField label={t('secondaryColor')} value={secondaryColor} onChange={(v) => set('secondaryColor', v)} invalidMsg={t('invalidHex')} />
 
             {/* Logo */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Logo</label>
+              <label className="text-sm font-medium text-zinc-300">{t('logo')}</label>
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl border border-zinc-700 bg-zinc-800/50 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {logoUrl ? (
@@ -187,7 +190,7 @@ export default function AppearanceSettingsPage() {
                     onClick={() => fileRef.current?.click()}
                     className="inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-sm text-zinc-200 transition-colors"
                   >
-                    <Upload className="w-4 h-4" /> Upload image
+                    <Upload className="w-4 h-4" /> {t('uploadImage')}
                   </button>
                   {logoUrl && (
                     <button
@@ -195,13 +198,13 @@ export default function AppearanceSettingsPage() {
                       onClick={() => { set('logoUrl', null); if (fileRef.current) fileRef.current.value = ''; }}
                       className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm text-red-400 hover:bg-red-950/30 transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" /> Remove
+                      <Trash2 className="w-4 h-4" /> {t('remove')}
                     </button>
                   )}
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" onChange={onLogoSelected} className="hidden" />
               </div>
-              <p className="text-xs text-zinc-600">PNG, JPG or SVG. Max 1MB.</p>
+              <p className="text-xs text-zinc-600">{t('logoHint')}</p>
             </div>
 
             {/* Save */}
@@ -214,7 +217,7 @@ export default function AppearanceSettingsPage() {
                 className="inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold text-white transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {saving ? 'Saving…' : 'Save changes'}
+                {saving ? t('saving') : t('saveChanges')}
               </motion.button>
             </div>
           </motion.div>
@@ -224,7 +227,7 @@ export default function AppearanceSettingsPage() {
             className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <h3 className="text-sm font-semibold text-white">Live Preview</h3>
+              <h3 className="text-sm font-semibold text-white">{t('livePreview')}</h3>
             </div>
 
             <div className="rounded-xl border border-zinc-800 overflow-hidden bg-zinc-950">
@@ -238,16 +241,16 @@ export default function AppearanceSettingsPage() {
                     <GraduationCap className="w-4 h-4 text-white" />
                   )}
                 </div>
-                <span className="text-sm font-bold text-white truncate">{name || 'Your School'}</span>
+                <span className="text-sm font-bold text-white truncate">{name || t('yourSchool')}</span>
               </div>
 
               <div className="flex">
                 {/* Mock sidebar */}
                 <div className="w-32 bg-zinc-900 border-r border-zinc-800 p-2 space-y-1">
                   {[
-                    { icon: LayoutDashboard, label: 'Dashboard', active: true },
-                    { icon: Users, label: 'Students', active: false },
-                    { icon: Bell, label: 'Alerts', active: false },
+                    { icon: LayoutDashboard, label: t('mockDashboard'), active: true },
+                    { icon: Users,           label: t('mockStudents'),  active: false },
+                    { icon: Bell,            label: t('mockAlerts'),    active: false },
                   ].map(({ icon: Icon, label, active }) => (
                     <div key={label}
                       className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px]"
@@ -270,10 +273,10 @@ export default function AppearanceSettingsPage() {
                   </div>
                   <div className="flex gap-2">
                     <button className="h-7 px-3 rounded-md text-[11px] font-semibold text-white" style={{ background: primaryColor }}>
-                      Primary
+                      {t('primary')}
                     </button>
                     <button className="h-7 px-3 rounded-md text-[11px] font-semibold text-white" style={{ background: secondaryColor }}>
-                      Secondary
+                      {t('secondary')}
                     </button>
                   </div>
                 </div>
@@ -283,8 +286,8 @@ export default function AppearanceSettingsPage() {
             {/* Swatches */}
             <div className="grid grid-cols-2 gap-3 mt-4">
               {[
-                { label: 'Primary', val: primaryColor },
-                { label: 'Secondary', val: secondaryColor },
+                { label: t('primary'),   val: primaryColor },
+                { label: t('secondary'), val: secondaryColor },
               ].map(({ label, val }) => (
                 <div key={label} className="flex items-center gap-2 p-2.5 rounded-lg bg-zinc-800/40 border border-zinc-800">
                   <div className="w-8 h-8 rounded-md border border-zinc-700" style={{ background: val }} />

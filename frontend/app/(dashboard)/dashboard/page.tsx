@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { fadeUp, stagger } from '@/lib/design/tokens';
 import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
@@ -18,6 +19,7 @@ interface Summary {
 }
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard');
   const [greeting, setGreeting] = useState('');
   const [counts, setCounts] = useState<OnboardingCounts>({ classes: 0, subjects: 0, students: 0, exams: 0 });
   const [grades, setGrades] = useState<GradeBucket[]>([]);
@@ -32,8 +34,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const h = new Date().getHours();
-    setGreeting(h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
-  }, []);
+    setGreeting(h < 12 ? t('greetingMorning') : h < 17 ? t('greetingAfternoon') : t('greetingEvening'));
+  }, [t]);
 
   useEffect(() => {
     Promise.allSettled([

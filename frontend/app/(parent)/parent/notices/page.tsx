@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface Notice {
@@ -13,6 +14,7 @@ interface Notice {
 }
 
 export default function ParentNotices() {
+  const t = useTranslations('parent');
   const [items, setItems] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,14 +28,14 @@ export default function ParentNotices() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
-      <h1 className="text-2xl font-bold text-white">Notices</h1>
+      <h1 className="text-2xl font-bold text-white">{t('notices')}</h1>
 
       {loading && <div className="h-20 rounded-xl bg-zinc-900 border border-zinc-800 animate-pulse" />}
 
       {!loading && items.length === 0 && (
         <div className="text-center py-16 text-zinc-500">
           <Bell className="w-10 h-10 mx-auto mb-3 opacity-50" />
-          <p>No notices yet.</p>
+          <p>{t('noNotices')}</p>
         </div>
       )}
 

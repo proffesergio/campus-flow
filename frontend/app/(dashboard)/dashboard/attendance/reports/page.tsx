@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -17,6 +18,8 @@ const PCT_COLOR = (p: number) =>
   p >= 90 ? 'text-emerald-400' : p >= 75 ? 'text-yellow-400' : 'text-red-400';
 
 export default function AttendanceReportsPage() {
+  const t = useTranslations('attendance');
+
   const [classes, setClasses] = useState<Class[]>([]);
   const [classId, setClassId] = useState('');
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -37,11 +40,16 @@ export default function AttendanceReportsPage() {
         `/attendance/summary?classId=${classId}&month=${month}`,
       );
       setSummary(res.data.data);
-    } catch { toast.error('Failed to load summary'); }
+    } catch { toast.error(t('failedLoadSummary')); }
     finally { setLoading(false); }
-  }, [classId, month]);
+  }, [classId, month, t]);
 
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
+
+  const headers = [
+    t('colStudent'), t('colRoll'), t('colPresent'), t('colAbsent'),
+    t('colLate'), t('colExcused'), t('colPercent'),
+  ];
 
   return (
     <div className="p-6 space-y-6">
@@ -51,8 +59,8 @@ export default function AttendanceReportsPage() {
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">Attendance Reports</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Monthly summary per student</p>
+          <h1 className="text-2xl font-bold text-white">{t('reportsTitle')}</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">{t('reportsSubtitle')}</p>
         </div>
       </div>
 
@@ -78,7 +86,7 @@ export default function AttendanceReportsPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-800">
-              {['Student', 'Roll', 'Present', 'Absent', 'Late', 'Excused', 'Attendance %'].map((h) => (
+              {headers.map((h) => (
                 <th key={h} className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">{h}</th>
               ))}
             </tr>
@@ -95,7 +103,7 @@ export default function AttendanceReportsPage() {
             ) : summary.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-10 text-center text-zinc-500 text-sm">
-                  No attendance data for this period
+                  {t('noData')}
                 </td>
               </tr>
             ) : (

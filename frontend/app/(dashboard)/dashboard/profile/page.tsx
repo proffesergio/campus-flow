@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, Shield, KeyRound, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,19 +21,22 @@ interface Me {
   photoUrl: string | null;
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  super_admin: 'Super Admin',
-  school_admin: 'School Admin',
-  teacher: 'Teacher',
-  finance: 'Finance',
-  student: 'Student',
-  parent: 'Parent',
-};
-
 const card = 'bg-zinc-900 border border-zinc-800 rounded-xl p-6';
 const fadeUp = { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
 
 export default function ProfilePage() {
+  const t = useTranslations('profile');
+  const tn = useTranslations('nav');
+
+  const ROLE_LABEL: Record<string, string> = {
+    super_admin: tn('roles.super_admin'),
+    school_admin: tn('roles.school_admin'),
+    teacher: tn('roles.teacher'),
+    finance: tn('roles.finance'),
+    student: 'Student',
+    parent: 'Parent',
+  };
+
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,12 +61,12 @@ export default function ProfilePage() {
         setLastName(u.lastName);
         setPhone(u.phone ?? '');
       })
-      .catch(() => toast.error('Failed to load profile'))
+      .catch(() => toast.error(t('failedLoad')))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   async function saveProfile() {
-    if (!firstName.trim() || !lastName.trim()) { toast.error('Name is required'); return; }
+    if (!firstName.trim() || !lastName.trim()) { toast.error(t('nameRequired')); return; }
     setSavingProfile(true);
     try {
       const r = await api.put<{ success: boolean; data: Me }>('/auth/me', {
@@ -71,26 +75,26 @@ export default function ProfilePage() {
         phone: phone.trim() || null,
       });
       setMe(r.data.data);
-      toast.success('Profile updated');
+      toast.success(t('profileUpdated'));
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? 'Failed to update profile');
+      toast.error(msg ?? t('failedUpdate'));
     } finally {
       setSavingProfile(false);
     }
   }
 
   async function savePassword() {
-    if (newPassword.length < 8) { toast.error('New password must be at least 8 characters'); return; }
-    if (newPassword !== confirmPassword) { toast.error('Passwords do not match'); return; }
+    if (newPassword.length < 8) { toast.error(t('passwordTooShort')); return; }
+    if (newPassword !== confirmPassword) { toast.error(t('passwordMismatch')); return; }
     setSavingPassword(true);
     try {
       await api.post('/auth/change-password', { currentPassword, newPassword });
-      toast.success('Password changed');
+      toast.success(t('passwordChanged'));
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? 'Failed to change password');
+      toast.error(msg ?? t('failedChangePassword'));
     } finally {
       setSavingPassword(false);
     }
@@ -101,8 +105,8 @@ export default function ProfilePage() {
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">My Profile</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">Manage your personal information and password</p>
+        <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+        <p className="text-sm text-zinc-500 mt-0.5">{t('subtitle')}</p>
       </div>
 
       {loading ? (
@@ -111,7 +115,7 @@ export default function ProfilePage() {
           <Skeleton className="h-56 bg-zinc-900 rounded-xl" />
         </>
       ) : !me ? (
-        <div className={card}><p className="text-zinc-500">Could not load your profile.</p></div>
+        <div className={card}><p className="text-zinc-500">{t('couldNotLoad')}</p></div>
       ) : (
         <>
           {/* Identity header */}
@@ -134,33 +138,33 @@ export default function ProfilePage() {
           <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.05 }} className={card}>
             <div className="flex items-center gap-2 mb-4">
               <User className="w-4 h-4 text-blue-400" />
-              <h2 className="font-semibold text-white">Personal Information</h2>
+              <h2 className="font-semibold text-white">{t('personalInfo')}</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>First Name</Label>
+                <Label>{t('firstName')}</Label>
                 <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Last Name</Label>
+                <Label>{t('lastName')}</Label>
                 <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Phone</Label>
+                <Label>{t('phone')}</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+880..." className="pl-9" />
+                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('phonePlaceholder')} className="pl-9" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Email</Label>
+                <Label>{t('email')}</Label>
                 <Input value={me.email} disabled className="opacity-60 cursor-not-allowed" />
               </div>
             </div>
             <div className="flex justify-end mt-5">
               <Button onClick={saveProfile} disabled={savingProfile} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
                 {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Save Changes
+                {savingProfile ? t('saving') : t('saveChanges')}
               </Button>
             </div>
           </motion.div>
@@ -169,23 +173,23 @@ export default function ProfilePage() {
           <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.1 }} className={card}>
             <div className="flex items-center gap-2 mb-4">
               <KeyRound className="w-4 h-4 text-purple-400" />
-              <h2 className="font-semibold text-white">Change Password</h2>
+              <h2 className="font-semibold text-white">{t('changePassword')}</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2 sm:max-w-xs">
-                <Label>Current Password</Label>
+                <Label>{t('currentPassword')}</Label>
                 <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>New Password</Label>
-                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 8 characters" />
+                <Label>{t('newPassword')}</Label>
+                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t('newPasswordPlaceholder')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Confirm New Password</Label>
+                <Label>{t('confirmNewPassword')}</Label>
                 <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
               </div>
             </div>
-            <p className="text-xs text-zinc-600 mt-3">Changing your password signs you out of other devices.</p>
+            <p className="text-xs text-zinc-600 mt-3">{t('passwordHint')}</p>
             <div className="flex justify-end mt-4">
               <Button
                 onClick={savePassword}
@@ -193,7 +197,7 @@ export default function ProfilePage() {
                 className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
               >
                 {savingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                Update Password
+                {savingPassword ? t('updatingPassword') : t('updatePassword')}
               </Button>
             </div>
           </motion.div>

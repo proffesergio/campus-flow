@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Filter } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface Grade {
@@ -29,6 +30,7 @@ function gradeBadgeClass(pct: number) {
 }
 
 export default function StudentGradesPage() {
+  const t = useTranslations('student');
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
   const [termFilter, setTermFilter] = useState('');
@@ -61,9 +63,9 @@ export default function StudentGradesPage() {
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-indigo-400" />
-            My Grades
+            {t('grades.title')}
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">{grades.length} results</p>
+          <p className="text-sm text-zinc-400 mt-1">{t('grades.results', { count: grades.length })}</p>
         </div>
         {terms.length > 0 && (
           <div className="flex items-center gap-2">
@@ -73,9 +75,9 @@ export default function StudentGradesPage() {
               onChange={(e) => setTermFilter(e.target.value)}
               className="bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-indigo-500"
             >
-              <option value="">All Terms</option>
-              {terms.map((t) => (
-                <option key={t} value={t}>{t}</option>
+              <option value="">{t('grades.allTerms')}</option>
+              {terms.map((term) => (
+                <option key={term} value={term}>{term}</option>
               ))}
             </select>
           </div>
@@ -91,7 +93,7 @@ export default function StudentGradesPage() {
       ) : grades.length === 0 ? (
         <div className="text-center py-16 text-zinc-500">
           <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>No grades recorded yet</p>
+          <p>{t('grades.noGrades')}</p>
         </div>
       ) : (
         Object.entries(grouped)
@@ -106,11 +108,11 @@ export default function StudentGradesPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-zinc-800">
-                        <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Exam</th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Subject</th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Type</th>
-                        <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Marks</th>
-                        <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Grade</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">{t('grades.colExam')}</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">{t('grades.colSubject')}</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">{t('grades.colType')}</th>
+                        <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">{t('grades.colMarks')}</th>
+                        <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">{t('grades.colGrade')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -136,7 +138,7 @@ export default function StudentGradesPage() {
                             </td>
                             <td className="px-4 py-3 text-right text-zinc-300">
                               {g.isAbsent ? (
-                                <span className="text-zinc-500">Absent</span>
+                                <span className="text-zinc-500">{t('grades.absent')}</span>
                               ) : g.marksObtained !== null ? (
                                 `${g.marksObtained} / ${g.exam.totalMarks}`
                               ) : '—'}

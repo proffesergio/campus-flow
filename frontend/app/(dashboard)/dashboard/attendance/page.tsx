@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, XCircle, Clock, BookOpen, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,14 +16,17 @@ interface AttendanceRecord {
 
 type Status = 'present' | 'absent' | 'late' | 'excused';
 
-const STATUS_CONFIG: Record<Status, { label: string; color: string; bg: string }> = {
-  present: { label: 'Present', color: 'text-emerald-400', bg: 'bg-emerald-500/20 border-emerald-500/40' },
-  absent:  { label: 'Absent',  color: 'text-red-400',     bg: 'bg-red-500/20 border-red-500/40'         },
-  late:    { label: 'Late',    color: 'text-yellow-400',  bg: 'bg-yellow-500/20 border-yellow-500/40'   },
-  excused: { label: 'Excused', color: 'text-blue-400',    bg: 'bg-blue-500/20 border-blue-500/40'       },
-};
-
 export default function AttendancePage() {
+  const t = useTranslations('attendance');
+  const ts = useTranslations('status');
+
+  const STATUS_CONFIG: Record<Status, { label: string; color: string; bg: string }> = {
+    present: { label: ts('present'), color: 'text-emerald-400', bg: 'bg-emerald-500/20 border-emerald-500/40' },
+    absent:  { label: ts('absent'),  color: 'text-red-400',     bg: 'bg-red-500/20 border-red-500/40'         },
+    late:    { label: ts('late'),    color: 'text-yellow-400',  bg: 'bg-yellow-500/20 border-yellow-500/40'   },
+    excused: { label: ts('excused'), color: 'text-blue-400',    bg: 'bg-blue-500/20 border-blue-500/40'       },
+  };
+
   const [classes, setClasses] = useState<Class[]>([]);
   const [classId, setClassId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -56,9 +60,9 @@ export default function AttendancePage() {
         initial[r.student.id] = (r.status as Status) ?? 'present';
       });
       setStatuses(initial);
-    } catch { toast.error('Failed to load attendance'); }
+    } catch { toast.error(t('failedLoad')); }
     finally { setLoading(false); }
-  }, [classId, date]);
+  }, [classId, date, t]);
 
   useEffect(() => { fetchAttendance(); }, [fetchAttendance]);
 
@@ -78,9 +82,9 @@ export default function AttendancePage() {
           status: statuses[r.student.id] ?? 'present',
         })),
       });
-      toast.success('Attendance saved');
+      toast.success(t('saved'));
       setAlreadyMarked(true);
-    } catch { toast.error('Failed to save attendance'); }
+    } catch { toast.error(t('failedSave')); }
     finally { setSaving(false); }
   }
 
@@ -90,8 +94,8 @@ export default function AttendancePage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Attendance</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">Mark daily attendance for your class</p>
+        <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+        <p className="text-sm text-zinc-500 mt-0.5">{t('subtitle')}</p>
       </div>
 
       {/* Controls */}
@@ -113,12 +117,12 @@ export default function AttendancePage() {
         />
         {alreadyMarked && (
           <span className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg">
-            <BookOpen className="w-3.5 h-3.5" /> Already marked — editing
+            <BookOpen className="w-3.5 h-3.5" /> {t('alreadyMarked')}
           </span>
         )}
         {markedCount > 0 && (
           <span className="text-xs text-zinc-500 ml-auto">
-            {presentCount}/{markedCount} present
+            {t('presentCount', { present: presentCount, total: markedCount })}
           </span>
         )}
       </div>
@@ -139,7 +143,7 @@ export default function AttendancePage() {
           </div>
         ) : records.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-zinc-500">No students in this class, or class not selected.</p>
+            <p className="text-zinc-500">{t('noStudents')}</p>
           </div>
         ) : (
           <div className="divide-y divide-zinc-800/50">
@@ -195,7 +199,7 @@ export default function AttendancePage() {
           <Button onClick={saveAttendance} disabled={saving}
             className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
             <Save className="w-4 h-4" />
-            {saving ? 'Saving...' : alreadyMarked ? 'Update Attendance' : 'Save Attendance'}
+            {saving ? t('saving') : alreadyMarked ? t('updateAttendance') : t('saveAttendance')}
           </Button>
         </div>
       )}

@@ -10,6 +10,7 @@ import {
   Download, Trash2, Search, ExternalLink, Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,8 @@ const STEP_FIELDS: Record<string, (keyof FormData)[]> = {
 const inputCls = 'bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500';
 
 export default function PracticePage() {
+  const t = useTranslations('practice');
+
   const [materials, setMaterials] = useState<Material[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [formSubjects, setFormSubjects] = useState<Subject[]>([]);
@@ -115,24 +118,24 @@ export default function PracticePage() {
         subjectId: data.subjectId || null,
         description: data.description || null,
       });
-      toast.success('Material added');
+      toast.success(t('materialAdded'));
       setDrawerOpen(false);
       fetchMaterials();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? 'Failed to save material');
+      toast.error(msg ?? t('failedSave'));
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this material?')) return;
+    if (!confirm(t('confirmDelete'))) return;
     try {
       await api.delete(`/practice-materials/${id}`);
-      toast.success('Deleted');
+      toast.success(t('deleted'));
       fetchMaterials();
-    } catch { toast.error('Failed to delete'); }
+    } catch { toast.error(t('failedDelete')); }
   }
 
   const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.05 } } };
@@ -143,43 +146,46 @@ export default function PracticePage() {
 
   const steps: WizardStep[] = [
     {
-      id: 'details', title: 'Details',
+      id: 'details', title: t('stepDetails'),
       content: (
         <div className="space-y-4">
-          <FormField label="Title" required error={errors.title?.message}>
-            <Input {...register('title')} placeholder="e.g. Chapter 5 – Photosynthesis" className={inputCls} />
+          <FormField label={t('fieldTitle')} required error={errors.title?.message}>
+            <Input {...register('title')} placeholder={t('placeholderTitle')} className={inputCls} />
           </FormField>
-          <FormField label="Description" error={errors.description?.message}>
-            <Input {...register('description')} placeholder="Optional short description" className={inputCls} />
+          <FormField label={t('fieldDescription')} error={errors.description?.message}>
+            <Input {...register('description')} placeholder={t('placeholderDescription')} className={inputCls} />
           </FormField>
-          <FormField label="Type" required error={errors.type?.message}>
+          <FormField label={t('fieldType')} required error={errors.type?.message}>
             <select {...register('type')} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-              <option value="pdf">PDF</option><option value="link">Link</option><option value="video">Video</option><option value="note">Note</option>
+              <option value="pdf">{t('typePdf')}</option>
+              <option value="link">{t('typeLink')}</option>
+              <option value="video">{t('typeVideo')}</option>
+              <option value="note">{t('typeNote')}</option>
             </select>
           </FormField>
-          <FormField label={values.type === 'pdf' ? 'File URL' : 'URL'} required error={errors.fileUrl?.message}>
-            <Input {...register('fileUrl')} placeholder={values.type === 'pdf' ? 'https://…' : 'https://youtube.com/…'} className={inputCls} />
+          <FormField label={values.type === 'pdf' ? t('fieldFileUrl') : t('fieldUrl')} required error={errors.fileUrl?.message}>
+            <Input {...register('fileUrl')} placeholder={values.type === 'pdf' ? t('placeholderFileUrl') : t('placeholderUrl')} className={inputCls} />
           </FormField>
         </div>
       ),
     },
     {
-      id: 'targeting', title: 'Targeting',
+      id: 'targeting', title: t('stepTargeting'),
       content: (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Class" error={errors.classId?.message}>
+            <FormField label={t('fieldClass')} error={errors.classId?.message}>
               <Combobox options={classOptions} value={values.classId}
-                onChange={(v) => { setValue('classId', v); setValue('subjectId', ''); }} placeholder="All classes" />
+                onChange={(v) => { setValue('classId', v); setValue('subjectId', ''); }} placeholder={t('placeholderAllClasses')} />
             </FormField>
-            <FormField label="Subject" error={errors.subjectId?.message}>
+            <FormField label={t('fieldSubject')} error={errors.subjectId?.message}>
               <Combobox options={subjectOptions} value={values.subjectId}
-                onChange={(v) => setValue('subjectId', v)} placeholder={formClassId ? 'All subjects' : 'Pick a class first'} disabled={!formClassId} />
+                onChange={(v) => setValue('subjectId', v)} placeholder={formClassId ? t('placeholderAllSubjects') : t('placeholderPickClassFirst')} disabled={!formClassId} />
             </FormField>
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" {...register('isPublished')} className="rounded border-zinc-600" />
-            <span className="text-sm text-zinc-300">Published (visible to students)</span>
+            <span className="text-sm text-zinc-300">{t('fieldPublished')}</span>
           </label>
         </div>
       ),
@@ -194,12 +200,12 @@ export default function PracticePage() {
             <BookMarked className="w-5 h-5 text-indigo-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Practice Materials</h1>
-            <p className="text-sm text-zinc-500 mt-0.5">Share study resources with students</p>
+            <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+            <p className="text-sm text-zinc-500 mt-0.5">{t('subtitle')}</p>
           </div>
         </div>
         <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-          <Plus className="w-4 h-4" /> Add Material
+          <Plus className="w-4 h-4" /> {t('addMaterial')}
         </Button>
       </div>
 
@@ -207,16 +213,20 @@ export default function PracticePage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search materials..." className={`pl-9 ${inputCls}`} />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('searchPlaceholder')} className={`pl-9 ${inputCls}`} />
         </div>
         <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}
           className="h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-          <option value="">All classes</option>
+          <option value="">{t('allClasses')}</option>
           {classes.map((c) => <option key={c.id} value={c.id}>{c.name}{c.section ? ` – ${c.section}` : ''}</option>)}
         </select>
         <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
           className="h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-          <option value="">All types</option><option value="pdf">PDF</option><option value="link">Link</option><option value="video">Video</option><option value="note">Note</option>
+          <option value="">{t('allTypes')}</option>
+          <option value="pdf">{t('typePdf')}</option>
+          <option value="link">{t('typeLink')}</option>
+          <option value="video">{t('typeVideo')}</option>
+          <option value="note">{t('typeNote')}</option>
         </select>
       </div>
 
@@ -228,8 +238,8 @@ export default function PracticePage() {
       ) : materials.length === 0 ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl py-20 text-center">
           <Upload className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-          <p className="text-zinc-500 text-sm">No practice materials yet</p>
-          <button onClick={openCreate} className="text-blue-400 text-sm hover:underline mt-1">Add the first material</button>
+          <p className="text-zinc-500 text-sm">{t('noMaterials')}</p>
+          <button onClick={openCreate} className="text-blue-400 text-sm hover:underline mt-1">{t('addFirstMaterial')}</button>
         </div>
       ) : (
         <motion.div variants={stagger} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -277,8 +287,8 @@ export default function PracticePage() {
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => !submitting && setDrawerOpen(false)} />
           <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-zinc-900 border-l border-zinc-800 z-50 overflow-y-auto">
             <div className="p-6 space-y-4">
-              <h2 className="text-xl font-bold text-white">Add Practice Material</h2>
-              <Wizard steps={steps} onValidateStep={validateStep} onSubmit={handleSubmit(onSubmit)} submitting={submitting} submitLabel="Add Material" />
+              <h2 className="text-xl font-bold text-white">{t('drawerTitle')}</h2>
+              <Wizard steps={steps} onValidateStep={validateStep} onSubmit={handleSubmit(onSubmit)} submitting={submitting} submitLabel={t('submitAddMaterial')} />
             </div>
           </div>
         </>

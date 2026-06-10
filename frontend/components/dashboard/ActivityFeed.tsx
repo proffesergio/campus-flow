@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { SectionCard } from '@/components/ui/section-card';
 
 export interface ActivityItem {
@@ -20,10 +21,11 @@ function timeAgo(dateStr: string) {
 }
 
 export default function ActivityFeed({ items }: { items: ActivityItem[] }) {
+  const t = useTranslations('dashboard');
   return (
-    <SectionCard title="Recent activity">
+    <SectionCard title={t('recentActivityTitle')}>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-600 py-4 text-center">No recent activity</p>
+        <p className="text-sm text-zinc-600 py-4 text-center">{t('noRecentActivity')}</p>
       ) : (
         <ul className="space-y-1">
           {items.slice(0, 6).map((it) => (

@@ -12,6 +12,7 @@ import {
   DollarSign, Sparkles, ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { setRoleCookie } from '@/lib/session';
 
@@ -21,33 +22,34 @@ const loginSchema = z.object({
 });
 type LoginForm = z.infer<typeof loginSchema>;
 
-const floatingCards = [
-  { icon: Users,         value: '2,847',  label: 'Students enrolled',   colorBg: 'bg-blue-500/10',   colorBorder: 'border-blue-500/20',   colorText: 'text-blue-400',    delay: 0    },
-  { icon: ClipboardCheck,value: '98.4%',  label: 'Attendance tracked',  colorBg: 'bg-emerald-500/10',colorBorder: 'border-emerald-500/20',colorText: 'text-emerald-400', delay: 0.12 },
-  { icon: DollarSign,    value: '৳12.4M', label: 'Fees collected',      colorBg: 'bg-purple-500/10', colorBorder: 'border-purple-500/20', colorText: 'text-purple-400',  delay: 0.24 },
-  { icon: Sparkles,      value: 'AI',     label: 'Powered reports',     colorBg: 'bg-orange-500/10', colorBorder: 'border-orange-500/20', colorText: 'text-orange-400',  delay: 0.36 },
-];
-
-const features = [
-  'Smart attendance tracking',
-  'AI-powered report cards',
-  'Real-time fee management',
-  'Parent & student portals',
-  'English & বাংলা support',
-];
-
 // ── Separated component so useSearchParams is inside Suspense ──────────────
 function LoginForm() {
+  const t = useTranslations('auth');
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [shakeForm, setShakeForm] = useState(false);
   const [featureIdx, setFeatureIdx] = useState(0);
 
+  const features = [
+    t('feature1'),
+    t('feature2'),
+    t('feature3'),
+    t('feature4'),
+    t('feature5'),
+  ];
+
+  const floatingCards = [
+    { icon: Users,         value: '2,847',  label: t('studentsEnrolled'),  colorBg: 'bg-blue-500/10',   colorBorder: 'border-blue-500/20',   colorText: 'text-blue-400',    delay: 0    },
+    { icon: ClipboardCheck,value: '98.4%',  label: t('attendanceTracked'), colorBg: 'bg-emerald-500/10',colorBorder: 'border-emerald-500/20',colorText: 'text-emerald-400', delay: 0.12 },
+    { icon: DollarSign,    value: '৳12.4M', label: t('feesCollected'),     colorBg: 'bg-purple-500/10', colorBorder: 'border-purple-500/20', colorText: 'text-purple-400',  delay: 0.24 },
+    { icon: Sparkles,      value: 'AI',     label: t('poweredReports'),    colorBg: 'bg-orange-500/10', colorBorder: 'border-orange-500/20', colorText: 'text-orange-400',  delay: 0.36 },
+  ];
+
   useEffect(() => {
-    const t = setInterval(() => setFeatureIdx((i) => (i + 1) % features.length), 2600);
-    return () => clearInterval(t);
-  }, []);
+    const timer = setInterval(() => setFeatureIdx((i) => (i + 1) % features.length), 2600);
+    return () => clearInterval(timer);
+  }, [features.length]);
 
   const {
     register,
@@ -75,7 +77,7 @@ function LoginForm() {
     } catch {
       setShakeForm(true);
       setTimeout(() => setShakeForm(false), 600);
-      toast.error('Invalid email or password');
+      toast.error(t('invalidCredentials'));
     }
   }
 
@@ -112,9 +114,9 @@ function LoginForm() {
           className="relative z-10 space-y-7">
           <div>
             <h1 className="text-[2.6rem] font-bold leading-tight text-white">
-              Modern school<br />management for<br />
+              {t('heroHeading')}<br />
               <span style={{ background: 'linear-gradient(90deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Bangladesh
+                {t('heroBangladesh')}
               </span>
             </h1>
             <div className="h-7 mt-4 overflow-hidden">
@@ -158,7 +160,7 @@ function LoginForm() {
           </div>
 
           <p className="text-xs" style={{ color: '#3f3f46' }}>
-            Trusted by schools across Bangladesh · English &amp; বাংলা
+            {t('trustedBy')}
           </p>
         </motion.div>
       </div>
@@ -182,9 +184,9 @@ function LoginForm() {
           className="w-full max-w-sm">
 
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white">Welcome back</h2>
+            <h2 className="text-2xl font-bold text-white">{t('welcomeBack')}</h2>
             <p className="text-sm mt-1.5" style={{ color: '#71717a' }}>
-              Sign in to your school account
+              {t('signInSubtitle')}
             </p>
           </div>
 
@@ -197,13 +199,13 @@ function LoginForm() {
             <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }} className="space-y-1.5">
               <label className="text-sm font-medium" style={{ color: '#d4d4d8' }}>
-                Email address
+                {t('email')}
               </label>
               <input
                 {...register('email')}
                 type="email"
                 autoComplete="email"
-                placeholder="you@school.edu.bd"
+                placeholder={t('emailPlaceholder')}
                 style={{
                   display: 'flex', width: '100%', height: '44px',
                   background: '#18181b', border: '1px solid #27272a',
@@ -228,7 +230,7 @@ function LoginForm() {
             <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.28 }} className="space-y-1.5">
               <label className="text-sm font-medium" style={{ color: '#d4d4d8' }}>
-                Password
+                {t('password')}
               </label>
               <div className="relative">
                 <input
@@ -281,10 +283,10 @@ function LoginForm() {
                   <>
                     <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
                       style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', display: 'block' }} />
-                    Signing in...
+                    {t('signingIn')}
                   </>
                 ) : (
-                  <>Sign In <ArrowRight style={{ width: 16, height: 16 }} /></>
+                  <>{t('signInButton')} <ArrowRight style={{ width: 16, height: 16 }} /></>
                 )}
               </motion.button>
             </motion.div>
@@ -292,9 +294,9 @@ function LoginForm() {
 
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}
             className="text-sm text-center mt-6" style={{ color: '#52525b' }}>
-            New school?{' '}
+            {t('newSchool')}{' '}
             <Link href="/register" style={{ color: '#60a5fa', textDecoration: 'none' }}>
-              Register here
+              {t('registerHere')}
             </Link>
           </motion.p>
         </motion.div>
