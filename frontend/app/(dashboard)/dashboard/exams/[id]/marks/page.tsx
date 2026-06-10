@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,6 +36,7 @@ const GRADE_COLOR: Record<string, string> = {
 };
 
 export default function ExamMarksPage() {
+  const t = useTranslations('exams');
   const { id } = useParams<{ id: string }>();
   const [exam, setExam] = useState<Exam | null>(null);
   const [grades, setGrades] = useState<GradeRow[]>([]);
@@ -50,9 +52,9 @@ export default function ExamMarksPage() {
       ]);
       setExam(examRes.data.data);
       setGrades(gradesRes.data.data);
-    } catch { toast.error('Failed to load exam data'); }
+    } catch { toast.error(t('failedLoad')); }
     finally { setLoading(false); }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -72,18 +74,18 @@ export default function ExamMarksPage() {
           remarks: g.remarks,
         })),
       });
-      toast.success('Grades saved');
+      toast.success(t('gradesSaved'));
       fetchData();
-    } catch { toast.error('Failed to save grades'); }
+    } catch { toast.error(t('failedSaveGrades')); }
     finally { setSaving(false); }
   }
 
   async function togglePublish() {
     try {
       await api.post(`/exams/${id}/publish`);
-      toast.success(exam?.isPublished ? 'Unpublished' : 'Published');
+      toast.success(exam?.isPublished ? t('unpublishSuccess') : t('publishSuccess'));
       fetchData();
-    } catch { toast.error('Failed to update publish status'); }
+    } catch { toast.error(t('failedPublish')); }
   }
 
   if (loading) return (
@@ -94,7 +96,7 @@ export default function ExamMarksPage() {
   );
 
   if (!exam) return (
-    <div className="p-6 text-center text-zinc-400">Exam not found.</div>
+    <div className="p-6 text-center text-zinc-400">{t('examNotFound')}</div>
   );
 
   return (
@@ -113,11 +115,11 @@ export default function ExamMarksPage() {
         <Button onClick={togglePublish} variant="outline"
           className={`border gap-2 ${exam.isPublished ? 'border-amber-500/40 text-amber-400' : 'border-zinc-700 text-zinc-400'}`}>
           <Eye className="w-4 h-4" />
-          {exam.isPublished ? 'Unpublish' : 'Publish'}
+          {exam.isPublished ? t('btnUnpublish') : t('btnPublish')}
         </Button>
         <Button onClick={saveGrades} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
           <Save className="w-4 h-4" />
-          {saving ? 'Saving...' : 'Save Grades'}
+          {saving ? t('btnSaving') : t('btnSaveGrades')}
         </Button>
       </div>
 
@@ -125,7 +127,14 @@ export default function ExamMarksPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-800">
-              {['Student', 'Roll', 'Absent', `Marks (/${exam.totalMarks})`, 'Grade', 'Remarks'].map((h) => (
+              {[
+                t('marksColStudent'),
+                t('marksColRoll'),
+                t('marksColAbsent'),
+                t('marksColMarks', { total: exam.totalMarks }),
+                t('marksColGrade'),
+                t('marksColRemarks'),
+              ].map((h) => (
                 <th key={h} className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">{h}</th>
               ))}
             </tr>
@@ -134,7 +143,7 @@ export default function ExamMarksPage() {
             {grades.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-10 text-center text-zinc-500 text-sm">
-                  No students found for this class.
+                  {t('marksNoStudents')}
                 </td>
               </tr>
             ) : grades.map((g) => {
@@ -174,7 +183,7 @@ export default function ExamMarksPage() {
                       type="text"
                       value={g.remarks}
                       onChange={(e) => updateGrade(g.studentId, 'remarks', e.target.value)}
-                      placeholder="Optional"
+                      placeholder={t('remarksPlaceholder')}
                       className="w-full h-8 bg-zinc-800 border border-zinc-700 rounded px-2 text-sm text-white focus:outline-none focus:border-blue-500"
                     />
                   </td>

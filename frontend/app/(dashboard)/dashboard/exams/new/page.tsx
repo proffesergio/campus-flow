@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
@@ -37,6 +38,7 @@ const STEP_FIELDS: Record<string, (keyof FormData)[]> = {
 };
 
 export default function NewExamPage() {
+  const t = useTranslations('exams');
   const router = useRouter();
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -70,58 +72,58 @@ export default function NewExamPage() {
     setSubmitting(true);
     try {
       await api.post('/exams', { ...data, examDate: new Date(data.examDate).toISOString() });
-      toast.success('Exam created');
+      toast.success(t('examCreated'));
       router.push('/dashboard/exams');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? 'Failed to create exam');
+      toast.error(msg ?? t('failedCreate'));
       setSubmitting(false);
     }
   }
 
   const steps: WizardStep[] = [
     {
-      id: 'details', title: 'Details',
+      id: 'details', title: t('stepDetails'),
       content: (
         <div className="space-y-4">
-          <FormField label="Exam Name" required error={errors.name?.message}>
-            <Input {...register('name')} placeholder="e.g. Mid-Term Mathematics" className={ic} />
+          <FormField label={t('fieldExamName')} required error={errors.name?.message}>
+            <Input {...register('name')} placeholder={t('placeholderExamName')} className={ic} />
           </FormField>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Class" required error={errors.classId?.message}>
+            <FormField label={t('fieldClass')} required error={errors.classId?.message}>
               <Combobox options={classOptions} value={values.classId}
                 onChange={(v) => { setValue('classId', v, { shouldValidate: true }); setValue('subjectId', ''); }}
-                placeholder="Select class" />
+                placeholder={t('placeholderSelectClass')} />
             </FormField>
-            <FormField label="Subject" required error={errors.subjectId?.message}>
+            <FormField label={t('fieldSubject')} required error={errors.subjectId?.message}>
               <Combobox options={subjectOptions} value={values.subjectId}
                 onChange={(v) => setValue('subjectId', v, { shouldValidate: true })}
-                placeholder={selectedClassId ? 'Select subject' : 'Pick a class first'} disabled={!selectedClassId} />
+                placeholder={selectedClassId ? t('placeholderSelectSubject') : t('placeholderPickClassFirst')} disabled={!selectedClassId} />
             </FormField>
           </div>
-          <FormField label="Exam Type" required error={errors.examType?.message}>
+          <FormField label={t('fieldExamType')} required error={errors.examType?.message}>
             <select {...register('examType')} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-              <option value="midterm">Midterm</option>
-              <option value="final">Final</option>
-              <option value="quiz">Quiz</option>
-              <option value="assignment">Assignment</option>
-              <option value="class_test">Class Test</option>
+              <option value="midterm">{t('typeLabels.midterm')}</option>
+              <option value="final">{t('typeLabels.final')}</option>
+              <option value="quiz">{t('typeLabels.quiz')}</option>
+              <option value="assignment">{t('typeLabels.assignment')}</option>
+              <option value="class_test">{t('typeLabels.class_test')}</option>
             </select>
           </FormField>
         </div>
       ),
     },
     {
-      id: 'schedule', title: 'Schedule & Marks',
+      id: 'schedule', title: t('stepSchedule'),
       content: (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Date" required error={errors.examDate?.message}><Input type="date" {...register('examDate')} className={ic} /></FormField>
-            <FormField label="Term" required error={errors.term?.message}><Input {...register('term')} placeholder="e.g. Term 1 2025-26" className={ic} /></FormField>
+            <FormField label={t('fieldDate')} required error={errors.examDate?.message}><Input type="date" {...register('examDate')} className={ic} /></FormField>
+            <FormField label={t('fieldTerm')} required error={errors.term?.message}><Input {...register('term')} placeholder={t('placeholderTerm')} className={ic} /></FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Total Marks" required error={errors.totalMarks?.message}><Input type="number" {...register('totalMarks')} placeholder="100" className={ic} /></FormField>
-            <FormField label="Passing Marks" required error={errors.passingMarks?.message}><Input type="number" {...register('passingMarks')} placeholder="40" className={ic} /></FormField>
+            <FormField label={t('fieldTotalMarks')} required error={errors.totalMarks?.message}><Input type="number" {...register('totalMarks')} placeholder={t('placeholderTotalMarks')} className={ic} /></FormField>
+            <FormField label={t('fieldPassingMarks')} required error={errors.passingMarks?.message}><Input type="number" {...register('passingMarks')} placeholder={t('placeholderPassingMarks')} className={ic} /></FormField>
           </div>
         </div>
       ),
@@ -134,11 +136,11 @@ export default function NewExamPage() {
         <Link href="/dashboard/exams" className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </Link>
-        <h1 className="text-2xl font-bold text-white">New Exam</h1>
+        <h1 className="text-2xl font-bold text-white">{t('newExamTitle')}</h1>
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <Wizard steps={steps} onValidateStep={validateStep} onSubmit={handleSubmit(onSubmit)} submitting={submitting} submitLabel="Create Exam" />
+        <Wizard steps={steps} onValidateStep={validateStep} onSubmit={handleSubmit(onSubmit)} submitting={submitting} submitLabel={t('submitCreateExam')} />
       </div>
     </div>
   );

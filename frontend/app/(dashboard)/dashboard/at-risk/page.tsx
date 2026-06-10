@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertTriangle, TrendingDown, CalendarX } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface AtRiskStudent {
@@ -20,6 +21,8 @@ interface AtRiskStudent {
 interface Summary { total: number; high: number; medium: number }
 
 export default function AtRiskPage() {
+  const t = useTranslations('atRisk');
+
   const [items, setItems] = useState<AtRiskStudent[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,19 +42,18 @@ export default function AtRiskPage() {
     <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <AlertTriangle className="w-6 h-6 text-amber-400" /> At-Risk Students
+          <AlertTriangle className="w-6 h-6 text-amber-400" /> {t('title')}
         </h1>
         <p className="text-sm text-zinc-400 mt-1">
-          Early warning based on recent attendance and average grades. Each flag is explained so
-          you can act early.
+          {t('subtitle')}
         </p>
       </div>
 
       {summary && (
         <div className="grid grid-cols-3 gap-3">
-          <Stat label="Flagged" value={summary.total} color="text-amber-400" />
-          <Stat label="High risk" value={summary.high} color="text-red-400" />
-          <Stat label="Medium risk" value={summary.medium} color="text-amber-400" />
+          <Stat label={t('statFlagged')} value={summary.total} color="text-amber-400" />
+          <Stat label={t('statHighRisk')} value={summary.high} color="text-red-400" />
+          <Stat label={t('statMediumRisk')} value={summary.medium} color="text-amber-400" />
         </div>
       )}
 
@@ -60,7 +62,7 @@ export default function AtRiskPage() {
       {!loading && items.length === 0 && (
         <div className="text-center py-16 text-zinc-500">
           <AlertTriangle className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p>No at-risk students right now. 🎉</p>
+          <p>{t('noAtRisk')}</p>
         </div>
       )}
 
@@ -89,7 +91,7 @@ export default function AtRiskPage() {
                 {it.student.class
                   ? `${it.student.class.name}${it.student.class.section ? ` ${it.student.class.section}` : ''}`
                   : '—'}
-                {it.student.rollNumber ? ` · Roll ${it.student.rollNumber}` : ''}
+                {it.student.rollNumber ? ` · ${t('roll')} ${it.student.rollNumber}` : ''}
               </p>
               <div className="flex flex-wrap gap-2">
                 {it.reasons.map((r, i) => (
