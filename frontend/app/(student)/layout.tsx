@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import {
   LayoutDashboard,
   BookOpen,
@@ -23,17 +24,6 @@ import { api } from '@/lib/api';
 import { clearRoleCookie } from '@/lib/session';
 import { toast } from 'sonner';
 
-const navItems = [
-  { href: '/student', label: 'Home', icon: LayoutDashboard, exact: true },
-  { href: '/student/grades', label: 'My Grades', icon: BookOpen },
-  { href: '/student/attendance', label: 'Attendance', icon: ClipboardCheck },
-  { href: '/student/fees', label: 'Fees', icon: DollarSign },
-  { href: '/student/exams', label: 'Exam Schedule', icon: CalendarDays },
-  { href: '/student/practice', label: 'Practice', icon: BookMarked },
-  { href: '/student/performance', label: 'Performance', icon: BarChart3 },
-  { href: '/student/ai-assistant', label: 'AI Assistant', icon: Bot },
-];
-
 interface Me {
   firstName: string;
   lastName: string;
@@ -44,6 +34,7 @@ interface Me {
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations('student');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [me, setMe] = useState<Me | null>(null);
   const [unread, setUnread] = useState(0);
@@ -63,13 +54,24 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       clearRoleCookie();
       router.push('/login');
     } catch {
-      toast.error('Failed to logout');
+      toast.error(t('failedLogout'));
     }
   }
 
   const initials = me
     ? `${me.firstName[0] ?? ''}${me.lastName[0] ?? ''}`.toUpperCase()
     : 'S';
+
+  const navItems = [
+    { href: '/student', label: t('nav.home'), icon: LayoutDashboard, exact: true },
+    { href: '/student/grades', label: t('nav.myGrades'), icon: BookOpen },
+    { href: '/student/attendance', label: t('nav.attendance'), icon: ClipboardCheck },
+    { href: '/student/fees', label: t('nav.fees'), icon: DollarSign },
+    { href: '/student/exams', label: t('nav.examSchedule'), icon: CalendarDays },
+    { href: '/student/practice', label: t('nav.practice'), icon: BookMarked },
+    { href: '/student/performance', label: t('nav.performance'), icon: BarChart3 },
+    { href: '/student/ai-assistant', label: t('nav.aiAssistant'), icon: Bot },
+  ];
 
   const Nav = ({ mobile = false }) => (
     <div className={cn('flex flex-col h-full bg-zinc-900 border-r border-zinc-800', mobile ? 'w-64' : 'w-64')}>
@@ -80,7 +82,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </div>
         <div>
           <p className="font-bold text-white text-sm leading-none">CampusFlow</p>
-          <p className="text-xs text-indigo-400 mt-0.5">Student Portal</p>
+          <p className="text-xs text-indigo-400 mt-0.5">{t('portalLabel')}</p>
         </div>
       </div>
 
@@ -94,7 +96,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             <div className="min-w-0">
               <p className="text-sm font-medium text-white truncate">{me.firstName} {me.lastName}</p>
               <p className="text-xs text-zinc-400 truncate">
-                {me.class?.name}{me.class?.section ? ` ${me.class.section}` : ''} · Roll {me.rollNumber}
+                {me.class?.name}{me.class?.section ? ` ${me.class.section}` : ''} · {t('roll')} {me.rollNumber}
               </p>
             </div>
           </div>
@@ -134,7 +136,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-red-400 hover:bg-red-950/30 transition-all"
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
-          <span>Logout</span>
+          <span>{t('logout')}</span>
         </button>
       </div>
     </div>

@@ -3,22 +3,25 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Send, RotateCcw, GraduationCap } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-const SUGGESTED = [
-  'Explain photosynthesis for Grade 8',
-  'Help me solve quadratic equations',
-  'I have a science test tomorrow',
-  'Explain Newton\'s laws of motion',
-];
-
 const STORAGE_KEY = 'campusflow_study_chat';
 
 export default function AIAssistantPage() {
+  const t = useTranslations('student');
+
+  const SUGGESTED = [
+    t('aiAssistant.suggest1'),
+    t('aiAssistant.suggest2'),
+    t('aiAssistant.suggest3'),
+    t('aiAssistant.suggest4'),
+  ];
+
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -146,8 +149,8 @@ export default function AIAssistantPage() {
             <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="font-semibold text-white text-sm">AI Study Assistant</p>
-            <p className="text-xs text-zinc-500">Powered by GPT-4o</p>
+            <p className="font-semibold text-white text-sm">{t('aiAssistant.title')}</p>
+            <p className="text-xs text-zinc-500">{t('aiAssistant.poweredBy')}</p>
           </div>
         </div>
         {messages.length > 0 && (
@@ -156,7 +159,7 @@ export default function AIAssistantPage() {
             className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Clear chat
+            {t('aiAssistant.clearChat')}
           </button>
         )}
       </div>
@@ -169,9 +172,9 @@ export default function AIAssistantPage() {
               <GraduationCap className="w-8 h-8 text-indigo-400" />
             </div>
             <div>
-              <p className="text-white font-semibold text-lg">Your AI Study Tutor</p>
+              <p className="text-white font-semibold text-lg">{t('aiAssistant.welcomeTitle')}</p>
               <p className="text-zinc-400 text-sm mt-1 max-w-xs">
-                Ask anything about your subjects, get explanations, or prepare for exams.
+                {t('aiAssistant.welcomeSubtitle')}
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
@@ -265,7 +268,7 @@ export default function AIAssistantPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKey}
             disabled={streaming}
-            placeholder="Ask anything about your studies... (Enter to send)"
+            placeholder={t('aiAssistant.inputPlaceholder')}
             rows={1}
             style={{ resize: 'none' }}
             className="flex-1 bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 disabled:opacity-50 placeholder-zinc-600 max-h-32 overflow-y-auto"
@@ -279,7 +282,7 @@ export default function AIAssistantPage() {
           </button>
         </div>
         <p className="text-xs text-zinc-600 text-center mt-2">
-          Chat history is saved locally on your device only.
+          {t('aiAssistant.chatHistoryNote')}
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ChevronLeft, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface Question {
@@ -15,6 +16,7 @@ interface Question {
 type Stage = 'setup' | 'quiz' | 'results';
 
 export default function GeneratePracticeTestPage() {
+  const t = useTranslations('student');
   const [stage, setStage] = useState<Stage>('setup');
   const [generating, setGenerating] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -31,7 +33,7 @@ export default function GeneratePracticeTestPage() {
 
   async function generateTest() {
     if (!subject.trim() || !topic.trim() || !studentClass.trim()) {
-      setError('Please fill in all fields.');
+      setError(t('generate.fillAllFields'));
       return;
     }
     setError('');
@@ -43,7 +45,7 @@ export default function GeneratePracticeTestPage() {
       );
       const qs = res.data.data?.questions ?? [];
       if (qs.length === 0) {
-        setError('AI could not generate questions. Try a different topic.');
+        setError(t('generate.noQuestionsGenerated'));
         return;
       }
       setQuestions(qs);
@@ -51,8 +53,8 @@ export default function GeneratePracticeTestPage() {
       setCurrent(0);
       setStage('quiz');
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to generate questions';
-      setError(msg.includes('OPENAI_API_KEY') ? 'OpenAI API key not configured.' : 'Failed to generate questions. Try again.');
+      const msg = e instanceof Error ? e.message : '';
+      setError(msg.includes('OPENAI_API_KEY') ? 'OpenAI API key not configured.' : t('generate.noQuestionsGenerated'));
     } finally {
       setGenerating(false);
     }
@@ -85,54 +87,54 @@ export default function GeneratePracticeTestPage() {
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-indigo-400" />
-            AI Practice Test
+            {t('generate.title')}
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">Generate personalized MCQ questions instantly</p>
+          <p className="text-sm text-zinc-400 mt-1">{t('generate.subtitle')}</p>
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Your Class</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">{t('generate.labelClass')}</label>
             <input
               value={studentClass}
               onChange={(e) => setStudentClass(e.target.value)}
-              placeholder="e.g. Grade 9, Class 10"
+              placeholder={t('generate.placeholderClass')}
               className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Subject</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">{t('generate.labelSubject')}</label>
             <input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g. Mathematics, Physics, English"
+              placeholder={t('generate.placeholderSubject')}
               className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Topic</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">{t('generate.labelTopic')}</label>
             <input
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g. Quadratic Equations, Newton's Laws"
+              placeholder={t('generate.placeholderTopic')}
               className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Difficulty</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">{t('generate.labelDifficulty')}</label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
                 className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500"
               >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
+                <option value="easy">{t('generate.diffEasy')}</option>
+                <option value="medium">{t('generate.diffMedium')}</option>
+                <option value="hard">{t('generate.diffHard')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Questions</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">{t('generate.labelQuestions')}</label>
               <select
                 value={count}
                 onChange={(e) => setCount(Number(e.target.value))}
@@ -155,12 +157,12 @@ export default function GeneratePracticeTestPage() {
             {generating ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Generating...
+                {t('generate.generating')}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Generate Practice Test
+                {t('generate.generate')}
               </>
             )}
           </button>
@@ -182,7 +184,7 @@ export default function GeneratePracticeTestPage() {
             className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
-            New Test
+            {t('generate.newTest')}
           </button>
           <div className="flex items-center gap-2">
             <span className="text-sm text-zinc-400">
@@ -246,7 +248,7 @@ export default function GeneratePracticeTestPage() {
                     <XCircle className="w-4 h-4 text-red-400" />
                   )}
                   <span className={`text-sm font-medium ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-                    {isCorrect ? 'Correct!' : `Incorrect — ${q.correctAnswer}`}
+                    {isCorrect ? t('generate.correct') : t('generate.incorrect', { answer: q.correctAnswer })}
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400">{q.explanation}</p>
@@ -260,7 +262,7 @@ export default function GeneratePracticeTestPage() {
             onClick={next}
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-3 rounded-lg transition-colors"
           >
-            {current < questions.length - 1 ? 'Next Question' : 'See Results'}
+            {current < questions.length - 1 ? t('generate.nextQuestion') : t('generate.seeResults')}
           </button>
         )}
       </div>
@@ -269,15 +271,21 @@ export default function GeneratePracticeTestPage() {
 
   // Results
   const pct = Math.round((score / questions.length) * 100);
+  const resultMsg = pct >= 80
+    ? t('generate.resultExcellent')
+    : pct >= 60
+    ? t('generate.resultGood')
+    : t('generate.resultKeepStudying');
+
   return (
     <div className="p-6 max-w-lg mx-auto space-y-6 text-center">
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 space-y-4">
         <div className="text-6xl font-bold text-white">{pct}%</div>
         <p className="text-zinc-300 text-lg">
-          {score} / {questions.length} correct
+          {t('generate.scoreLabel', { score, total: questions.length })}
         </p>
         <p className={`text-sm font-medium ${pct >= 80 ? 'text-green-400' : pct >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-          {pct >= 80 ? 'Excellent work!' : pct >= 60 ? 'Good effort, keep practising!' : 'Keep studying — you can improve!'}
+          {resultMsg}
         </p>
 
         <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mt-4">
@@ -308,7 +316,7 @@ export default function GeneratePracticeTestPage() {
                 <div>
                   <p className="text-zinc-300 line-clamp-2">{q.question}</p>
                   {!correct && (
-                    <p className="text-xs text-green-400 mt-1">Correct: {q.correctAnswer}</p>
+                    <p className="text-xs text-green-400 mt-1">{t('generate.correctLabel')} {q.correctAnswer}</p>
                   )}
                 </div>
               </div>
@@ -322,7 +330,7 @@ export default function GeneratePracticeTestPage() {
         className="flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-3 rounded-lg transition-colors"
       >
         <RotateCcw className="w-4 h-4" />
-        Try Again
+        {t('generate.tryAgain')}
       </button>
     </div>
   );

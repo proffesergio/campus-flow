@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { BookMarked, FileText, Link2, Video, StickyNote, Sparkles, Search, ExternalLink } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface Material {
@@ -32,6 +33,7 @@ const TYPE_COLORS = {
 };
 
 export default function StudentPracticePage() {
+  const t = useTranslations('student');
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -53,16 +55,16 @@ export default function StudentPracticePage() {
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <BookMarked className="w-5 h-5 text-indigo-400" />
-            Practice Materials
+            {t('practice.title')}
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">Resources shared by your teachers</p>
+          <p className="text-sm text-zinc-400 mt-1">{t('practice.subtitle')}</p>
         </div>
         <Link
           href="/student/practice/generate"
           className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Sparkles className="w-4 h-4" />
-          AI Practice Test
+          {t('practice.aiPracticeTest')}
         </Link>
       </div>
 
@@ -73,7 +75,7 @@ export default function StudentPracticePage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search materials..."
+            placeholder={t('practice.searchPlaceholder')}
             className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-indigo-500"
           />
         </div>
@@ -82,11 +84,11 @@ export default function StudentPracticePage() {
           onChange={(e) => setTypeFilter(e.target.value)}
           className="bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500"
         >
-          <option value="">All Types</option>
-          <option value="pdf">PDF</option>
-          <option value="link">Link</option>
-          <option value="video">Video</option>
-          <option value="note">Note</option>
+          <option value="">{t('practice.allTypes')}</option>
+          <option value="pdf">{t('practice.typePdf')}</option>
+          <option value="link">{t('practice.typeLink')}</option>
+          <option value="video">{t('practice.typeVideo')}</option>
+          <option value="note">{t('practice.typeNote')}</option>
         </select>
       </div>
 
@@ -99,9 +101,9 @@ export default function StudentPracticePage() {
       ) : materials.length === 0 ? (
         <div className="text-center py-16 text-zinc-500">
           <BookMarked className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>No materials available yet</p>
+          <p>{t('practice.noMaterials')}</p>
           <Link href="/student/practice/generate" className="text-sm text-indigo-400 hover:underline mt-2 block">
-            Generate an AI practice test instead →
+            {t('practice.generateInstead')} →
           </Link>
         </div>
       ) : (

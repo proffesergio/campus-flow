@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ClipboardCheck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface AttendanceRecord {
@@ -26,6 +27,8 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 export default function StudentAttendancePage() {
+  const t = useTranslations('student');
+  const tStatus = useTranslations('status');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewDate, setViewDate] = useState(new Date());
@@ -61,6 +64,23 @@ export default function StudentAttendancePage() {
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
+  const dayLabels = [
+    t('attendance.daysSun'),
+    t('attendance.daysMon'),
+    t('attendance.daysTue'),
+    t('attendance.daysWed'),
+    t('attendance.daysThu'),
+    t('attendance.daysFri'),
+    t('attendance.daysSat'),
+  ];
+
+  const stats = [
+    { labelKey: 'attendance.statPresent', value: present, color: 'text-green-400', bg: 'bg-green-500/10' },
+    { labelKey: 'attendance.statAbsent', value: absent, color: 'text-red-400', bg: 'bg-red-500/10' },
+    { labelKey: 'attendance.statLate', value: late, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+    { labelKey: 'attendance.statRate', value: pct !== null ? `${pct}%` : '—', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+  ] as const;
+
   function prevMonth() {
     setViewDate(new Date(year, month - 1, 1));
   }
@@ -72,20 +92,15 @@ export default function StudentAttendancePage() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <h1 className="text-xl font-bold text-white flex items-center gap-2">
         <ClipboardCheck className="w-5 h-5 text-green-400" />
-        Attendance
+        {t('attendance.title')}
       </h1>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: 'Present', value: present, color: 'text-green-400', bg: 'bg-green-500/10' },
-          { label: 'Absent', value: absent, color: 'text-red-400', bg: 'bg-red-500/10' },
-          { label: 'Late', value: late, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-          { label: 'Rate', value: pct !== null ? `${pct}%` : '—', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-        ].map((s) => (
-          <div key={s.label} className={`${s.bg} border border-zinc-800 rounded-xl p-4`}>
+        {stats.map((s) => (
+          <div key={s.labelKey} className={`${s.bg} border border-zinc-800 rounded-xl p-4`}>
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-zinc-500 mt-1">{s.label}</p>
+            <p className="text-xs text-zinc-500 mt-1">{t(s.labelKey)}</p>
           </div>
         ))}
       </div>
@@ -110,7 +125,7 @@ export default function StudentAttendancePage() {
 
         {/* Day labels */}
         <div className="grid grid-cols-7 mb-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+          {dayLabels.map((d) => (
             <div key={d} className="text-center text-xs text-zinc-600 font-medium py-1">{d}</div>
           ))}
         </div>
@@ -149,7 +164,7 @@ export default function StudentAttendancePage() {
           {Object.entries(STATUS_COLORS).map(([status, bg]) => (
             <div key={status} className="flex items-center gap-1.5">
               <div className={`w-3 h-3 rounded ${bg}`} />
-              <span className="text-xs text-zinc-400 capitalize">{status}</span>
+              <span className="text-xs text-zinc-400">{tStatus(status as 'present' | 'absent' | 'late' | 'excused')}</span>
             </div>
           ))}
         </div>
@@ -158,10 +173,10 @@ export default function StudentAttendancePage() {
       {/* Recent records */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-800">
-          <h3 className="font-semibold text-white text-sm">This Month&apos;s Records</h3>
+          <h3 className="font-semibold text-white text-sm">{t('attendance.thisMonthRecords')}</h3>
         </div>
         {records.length === 0 ? (
-          <p className="text-sm text-zinc-500 text-center py-8">No records for this month</p>
+          <p className="text-sm text-zinc-500 text-center py-8">{t('attendance.noRecords')}</p>
         ) : (
           <div className="divide-y divide-zinc-800/50">
             {records
@@ -171,8 +186,8 @@ export default function StudentAttendancePage() {
                   <span className="text-sm text-zinc-300">
                     {new Date(r.date).toLocaleDateString('en-BD', { weekday: 'short', day: 'numeric', month: 'short' })}
                   </span>
-                  <span className={`text-sm font-medium capitalize ${STATUS_TEXT[r.status]}`}>
-                    {r.status}
+                  <span className={`text-sm font-medium ${STATUS_TEXT[r.status]}`}>
+                    {tStatus(r.status)}
                   </span>
                 </div>
               ))}

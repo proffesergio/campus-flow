@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { CalendarDays } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface Exam {
@@ -24,16 +25,8 @@ const TYPE_COLORS: Record<string, string> = {
   'class-test': 'bg-pink-500/20 text-pink-400',
 };
 
-function daysUntil(dateStr: string) {
-  const diff = new Date(dateStr).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0);
-  const days = Math.round(diff / 86400000);
-  if (days === 0) return { label: 'Today', color: 'text-red-400' };
-  if (days === 1) return { label: 'Tomorrow', color: 'text-amber-400' };
-  if (days < 0) return { label: `${Math.abs(days)}d ago`, color: 'text-zinc-500' };
-  return { label: `In ${days} days`, color: days <= 3 ? 'text-amber-400' : 'text-zinc-400' };
-}
-
 export default function StudentExamsPage() {
+  const t = useTranslations('student');
   const [upcoming, setUpcoming] = useState<Exam[]>([]);
   const [past, setPast] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,28 +42,42 @@ export default function StudentExamsPage() {
     }).finally(() => setLoading(false));
   }, []);
 
+  function daysUntil(dateStr: string) {
+    const diff = new Date(dateStr).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0);
+    const days = Math.round(diff / 86400000);
+    if (days === 0) return { label: t('exams.today'), color: 'text-red-400' };
+    if (days === 1) return { label: t('exams.tomorrow'), color: 'text-amber-400' };
+    if (days < 0) return { label: t('exams.daysAgo', { days: Math.abs(days) }), color: 'text-zinc-500' };
+    return { label: t('exams.inDays', { days }), color: days <= 3 ? 'text-amber-400' : 'text-zinc-400' };
+  }
+
   const list = tab === 'upcoming' ? upcoming : past;
+  const tabLabel = tab === 'upcoming' ? t('exams.tabUpcoming') : t('exams.tabPast');
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <h1 className="text-xl font-bold text-white flex items-center gap-2">
         <CalendarDays className="w-5 h-5 text-blue-400" />
-        Exam Schedule
+        {t('exams.title')}
       </h1>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-zinc-800/50 p-1 rounded-lg w-fit">
-        {(['upcoming', 'past'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
-              tab === t ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            {t} {t === 'upcoming' ? `(${upcoming.length})` : `(${past.length})`}
-          </button>
-        ))}
+        {(['upcoming', 'past'] as const).map((tabKey) => {
+          const label = tabKey === 'upcoming' ? t('exams.tabUpcoming') : t('exams.tabPast');
+          const count = tabKey === 'upcoming' ? upcoming.length : past.length;
+          return (
+            <button
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                tab === tabKey ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              {label} ({count})
+            </button>
+          );
+        })}
       </div>
 
       {loading ? (
@@ -82,7 +89,7 @@ export default function StudentExamsPage() {
       ) : list.length === 0 ? (
         <div className="text-center py-16 text-zinc-500">
           <CalendarDays className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>No {tab} exams</p>
+          <p>{t('exams.noExams', { tab: tabLabel })}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -122,7 +129,7 @@ export default function StudentExamsPage() {
 
                 <div className="text-right flex-shrink-0">
                   <p className={`text-xs font-medium ${until.color}`}>{until.label}</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">{exam.totalMarks} marks</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">{exam.totalMarks} {t('exams.marks')}</p>
                 </div>
               </motion.div>
             );
