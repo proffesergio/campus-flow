@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   Plus, Search, Users, UserCheck, UserPlus, Pencil, Trash2, Eye,
   Upload, Download, Power, ArrowRightLeft, Send, Loader2,
@@ -67,6 +68,10 @@ function exportStudents(rows: Student[]) {
 }
 
 export default function StudentsPage() {
+  const t = useTranslations('students');
+  const tc = useTranslations('common');
+  const ts = useTranslations('status');
+
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -103,9 +108,9 @@ export default function StudentsPage() {
       const res = await api.get<{ success: boolean; items: Student[]; meta: Meta }>(`/students?${params}`);
       setStudents(res.data.items ?? []);
       setMeta(res.data.meta);
-    } catch { toast.error('Failed to load students'); }
+    } catch { toast.error(t('failedLoad')); }
     finally { setLoading(false); }
-  }, [page, search, classFilter, statusFilter]);
+  }, [page, search, classFilter, statusFilter, t]);
 
   useEffect(() => { fetchStudents(); }, [fetchStudents]);
 
@@ -130,58 +135,58 @@ export default function StudentsPage() {
   const selectedStudents = students.filter((s) => selectedIds.has(s.id));
 
   async function handleDelete(id: string) {
-    if (!confirm('Deactivate this student?')) return;
+    if (!confirm(t('confirmDeactivate'))) return;
     try {
       await api.delete(`/students/${id}`);
-      toast.success('Student deactivated');
+      toast.success(t('deactivated'));
       fetchStudents();
-    } catch { toast.error('Failed to deactivate'); }
+    } catch { toast.error(t('failedDeactivate')); }
   }
 
   async function bulkDeactivate() {
-    if (!confirm(`Deactivate ${selectedIds.size} student(s)?`)) return;
+    if (!confirm(t('confirmBulkDeactivate', { count: selectedIds.size }))) return;
     setBulkBusy(true);
     try {
       const res = await api.post<{ success: boolean; data: { affected: number } }>('/students/bulk', {
         action: 'deactivate', ids: [...selectedIds],
       });
-      toast.success(`Deactivated ${res.data.data.affected}`);
+      toast.success(t('bulkDeactivated', { count: res.data.data.affected }));
       clearSelection();
       fetchStudents();
-    } catch { toast.error('Bulk action failed'); }
+    } catch { toast.error(t('bulkActionFailed')); }
     finally { setBulkBusy(false); }
   }
 
   async function bulkMove() {
-    if (!moveClassId) { toast.error('Pick a class'); return; }
+    if (!moveClassId) { toast.error(t('pickClass')); return; }
     setBulkBusy(true);
     try {
       const res = await api.post<{ success: boolean; data: { affected: number } }>('/students/bulk', {
         action: 'move-class', ids: [...selectedIds], classId: moveClassId,
       });
-      toast.success(`Moved ${res.data.data.affected}`);
+      toast.success(t('moved', { count: res.data.data.affected }));
       setMoveOpen(false); setMoveClassId(''); clearSelection();
       fetchStudents();
-    } catch { toast.error('Move failed'); }
+    } catch { toast.error(t('moveFailed')); }
     finally { setBulkBusy(false); }
   }
 
   async function bulkNotify() {
-    if (!noticeSubject.trim() || !noticeMessage.trim()) { toast.error('Subject and message required'); return; }
+    if (!noticeSubject.trim() || !noticeMessage.trim()) { toast.error(t('subjectRequired')); return; }
     setBulkBusy(true);
     try {
       const res = await api.post<{ success: boolean; data: { sent: number } }>('/notifications/notify-students', {
         studentIds: [...selectedIds], subject: noticeSubject.trim(), message: noticeMessage.trim(), channels: ['in_app'],
       });
-      toast.success(`Notice sent (${res.data.data.sent})`);
+      toast.success(t('noticeSent', { count: res.data.data.sent }));
       setNoticeOpen(false); setNoticeSubject(''); setNoticeMessage(''); clearSelection();
-    } catch { toast.error('Failed to send notice'); }
+    } catch { toast.error(t('noticeFailed')); }
     finally { setBulkBusy(false); }
   }
 
   const columns: Column<Student>[] = [
     {
-      key: 'student', header: 'Student',
+      key: 'student', header: t('name'),
       render: (s) => (
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
@@ -191,10 +196,10 @@ export default function StudentsPage() {
         </div>
       ),
     },
-    { key: 'class', header: 'Class', render: (s) => <span className="text-sm text-zinc-400">{classLabel(s.class) || '—'}</span> },
-    { key: 'roll', header: 'Roll', render: (s) => <span className="text-sm text-zinc-400">{s.rollNumber ?? '—'}</span> },
+    { key: 'class', header: t('class'), render: (s) => <span className="text-sm text-zinc-400">{classLabel(s.class) || '—'}</span> },
+    { key: 'roll', header: t('rollNumber'), render: (s) => <span className="text-sm text-zinc-400">{s.rollNumber ?? '—'}</span> },
     {
-      key: 'guardian', header: 'Guardian',
+      key: 'guardian', header: t('guardianName'),
       render: (s) => (
         <div>
           <p className="text-sm text-zinc-300">{s.guardianName ?? '—'}</p>
@@ -203,10 +208,10 @@ export default function StudentsPage() {
       ),
     },
     {
-      key: 'status', header: 'Status',
+      key: 'status', header: tc('status'),
       render: (s) => (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border capitalize ${STATUS_STYLE[s.status] ?? STATUS_STYLE.inactive}`}>
-          {s.status}
+          {ts(s.status as Parameters<typeof ts>[0])}
         </span>
       ),
     },
@@ -231,18 +236,18 @@ export default function StudentsPage() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Students"
-        subtitle="Manage your school's student records"
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <>
             <Button variant="ghost" onClick={() => setImportOpen(true)} className="text-zinc-300 gap-2">
-              <Upload className="w-4 h-4" /> Import
+              <Upload className="w-4 h-4" /> {tc('import')}
             </Button>
             <Button variant="ghost" onClick={() => exportStudents(students)} disabled={students.length === 0} className="text-zinc-300 gap-2">
-              <Download className="w-4 h-4" /> Export
+              <Download className="w-4 h-4" /> {tc('export')}
             </Button>
             <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-              <Plus className="w-4 h-4" /> Add Student
+              <Plus className="w-4 h-4" /> {t('addStudent')}
             </Button>
           </>
         }
@@ -251,9 +256,9 @@ export default function StudentsPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Total Students', value: stats?.total, icon: Users, color: 'text-blue-400' },
-          { label: 'Active', value: stats?.active, icon: UserCheck, color: 'text-emerald-400' },
-          { label: 'Enrolled This Month', value: stats?.thisMonth, icon: UserPlus, color: 'text-purple-400' },
+          { label: t('totalStudents'), value: stats?.total, icon: Users, color: 'text-blue-400' },
+          { label: t('active'), value: stats?.active, icon: UserCheck, color: 'text-emerald-400' },
+          { label: t('enrolledThisMonth'), value: stats?.thisMonth, icon: UserPlus, color: 'text-purple-400' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
@@ -274,21 +279,21 @@ export default function StudentsPage() {
           <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by name, roll, phone..."
+            placeholder={t('searchPlaceholder')}
             className="pl-9 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600"
           />
         </div>
         <select value={classFilter} onChange={(e) => { setClassFilter(e.target.value); setPage(1); }}
           className="h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-          <option value="">All classes</option>
+          <option value="">{t('allClasses')}</option>
           {classes.map((c) => <option key={c.id} value={c.id}>{classLabel(c)}</option>)}
         </select>
         <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
           className="h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-          <option value="">All statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="graduated">Graduated</option>
+          <option value="">{t('allStatuses')}</option>
+          <option value="active">{ts('active')}</option>
+          <option value="inactive">{ts('inactive')}</option>
+          <option value="graduated">{ts('graduated')}</option>
         </select>
       </div>
 
@@ -303,9 +308,9 @@ export default function StudentsPage() {
         empty={
           <EmptyState
             icon={Users}
-            title="No students found"
-            description="Add a student or import a CSV to get started."
-            action={<Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white gap-2"><Plus className="w-4 h-4" /> Add Student</Button>}
+            title={t('noStudents')}
+            description={t('noStudentsDesc')}
+            action={<Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white gap-2"><Plus className="w-4 h-4" /> {t('addStudent')}</Button>}
           />
         }
       />
@@ -313,25 +318,25 @@ export default function StudentsPage() {
       {/* Pagination */}
       {meta && meta.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="text-zinc-400">Previous</Button>
-          <span className="text-xs text-zinc-500">Page {page} of {meta.totalPages} ({meta.total} students)</span>
-          <Button variant="ghost" size="sm" disabled={page >= meta.totalPages} onClick={() => setPage((p) => p + 1)} className="text-zinc-400">Next</Button>
+          <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="text-zinc-400">{tc('previous')}</Button>
+          <span className="text-xs text-zinc-500">{tc('page')} {page} {tc('of')} {meta.totalPages} ({meta.total} {t('title').toLowerCase()})</span>
+          <Button variant="ghost" size="sm" disabled={page >= meta.totalPages} onClick={() => setPage((p) => p + 1)} className="text-zinc-400">{tc('next')}</Button>
         </div>
       )}
 
       {/* Bulk action bar */}
       <BulkActionBar count={selectedIds.size} onClear={clearSelection}>
         <Button size="sm" variant="ghost" onClick={bulkDeactivate} disabled={bulkBusy} className="text-zinc-200 gap-1.5">
-          <Power className="w-3.5 h-3.5" /> Deactivate
+          <Power className="w-3.5 h-3.5" /> {t('deactivate')}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => exportStudents(selectedStudents)} className="text-zinc-200 gap-1.5">
-          <Download className="w-3.5 h-3.5" /> Export
+          <Download className="w-3.5 h-3.5" /> {tc('export')}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setMoveOpen(true)} className="text-zinc-200 gap-1.5">
-          <ArrowRightLeft className="w-3.5 h-3.5" /> Move class
+          <ArrowRightLeft className="w-3.5 h-3.5" /> {t('moveClass')}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setNoticeOpen(true)} className="text-zinc-200 gap-1.5">
-          <Send className="w-3.5 h-3.5" /> Send notice
+          <Send className="w-3.5 h-3.5" /> {t('sendNotice')}
         </Button>
       </BulkActionBar>
 
@@ -339,21 +344,21 @@ export default function StudentsPage() {
       <Dialog open={moveOpen} onOpenChange={setMoveOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-white">Move {selectedIds.size} student(s)</DialogTitle>
-            <DialogDescription>Select the destination class.</DialogDescription>
+            <DialogTitle className="text-white">{t('moveClassTitle', { count: selectedIds.size })}</DialogTitle>
+            <DialogDescription>{t('moveClassDesc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label>Class</Label>
+            <Label>{t('class')}</Label>
             <select value={moveClassId} onChange={(e) => setMoveClassId(e.target.value)}
               className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-sm text-white">
-              <option value="">Select class</option>
+              <option value="">{t('selectClass')}</option>
               {classes.map((c) => <option key={c.id} value={c.id}>{classLabel(c)}</option>)}
             </select>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setMoveOpen(false)} className="text-zinc-400">Cancel</Button>
+            <Button variant="ghost" onClick={() => setMoveOpen(false)} className="text-zinc-400">{tc('cancel')}</Button>
             <Button onClick={bulkMove} disabled={bulkBusy || !moveClassId} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-              {bulkBusy && <Loader2 className="w-4 h-4 animate-spin" />} Move
+              {bulkBusy && <Loader2 className="w-4 h-4 animate-spin" />} {t('moveClass')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -363,25 +368,25 @@ export default function StudentsPage() {
       <Dialog open={noticeOpen} onOpenChange={setNoticeOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-white">Send notice to {selectedIds.size} guardian(s)</DialogTitle>
-            <DialogDescription>Delivered to each selected student&apos;s guardian inbox.</DialogDescription>
+            <DialogTitle className="text-white">{t('sendNoticeTitle', { count: selectedIds.size })}</DialogTitle>
+            <DialogDescription>{t('sendNoticeDesc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label>Subject</Label>
-              <Input value={noticeSubject} onChange={(e) => setNoticeSubject(e.target.value)} placeholder="e.g. Parent-teacher meeting" />
+              <Label>{t('noticeSubject')}</Label>
+              <Input value={noticeSubject} onChange={(e) => setNoticeSubject(e.target.value)} placeholder={t('subjectPlaceholder')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Message</Label>
+              <Label>{t('noticeMessage')}</Label>
               <textarea value={noticeMessage} onChange={(e) => setNoticeMessage(e.target.value)} rows={4}
-                placeholder="Write your message..."
+                placeholder={t('noticePlaceholder')}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setNoticeOpen(false)} className="text-zinc-400">Cancel</Button>
+            <Button variant="ghost" onClick={() => setNoticeOpen(false)} className="text-zinc-400">{tc('cancel')}</Button>
             <Button onClick={bulkNotify} disabled={bulkBusy || !noticeSubject || !noticeMessage} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-              {bulkBusy && <Loader2 className="w-4 h-4 animate-spin" />} Send
+              {bulkBusy && <Loader2 className="w-4 h-4 animate-spin" />} {t('sendNotice')}
             </Button>
           </DialogFooter>
         </DialogContent>

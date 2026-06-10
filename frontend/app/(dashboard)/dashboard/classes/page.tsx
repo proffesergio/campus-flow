@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Layers, Users, Pencil, Trash2, GraduationCap, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,9 @@ const emptyForm = (): FormState => ({
 });
 
 export default function ClassesPage() {
+  const t = useTranslations('classes');
+  const tc = useTranslations('common');
+
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -52,11 +56,11 @@ export default function ClassesPage() {
       const res = await api.get<{ success: boolean; data: ClassRow[] }>('/classes');
       setClasses(res.data.data ?? []);
     } catch {
-      toast.error('Failed to load classes');
+      toast.error(t('failedLoad'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchClasses(); }, [fetchClasses]);
 
@@ -81,8 +85,8 @@ export default function ClassesPage() {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) { toast.error('Class name is required'); return; }
-    if (!form.academicYear.trim()) { toast.error('Academic year is required'); return; }
+    if (!form.name.trim()) { toast.error(t('nameRequired')); return; }
+    if (!form.academicYear.trim()) { toast.error(t('yearRequired')); return; }
     setSaving(true);
     const payload = {
       name: form.name.trim(),
@@ -93,10 +97,10 @@ export default function ClassesPage() {
     try {
       if (form.id) {
         await api.put(`/classes/${form.id}`, payload);
-        toast.success('Class updated');
+        toast.success(t('classUpdated'));
       } else {
         await api.post('/classes', payload);
-        toast.success('Class created');
+        toast.success(t('classCreated'));
       }
       setOpen(false);
       fetchClasses();
@@ -109,14 +113,14 @@ export default function ClassesPage() {
   }
 
   async function handleDelete(c: ClassRow) {
-    if (!confirm(`Delete "${c.name}${c.section ? ` – ${c.section}` : ''}"? This cannot be undone.`)) return;
+    if (!confirm(t('confirmDelete', { name: `${c.name}${c.section ? ` – ${c.section}` : ''}` }))) return;
     try {
       await api.delete(`/classes/${c.id}`);
-      toast.success('Class deleted');
+      toast.success(t('classDeleted'));
       fetchClasses();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? 'Failed to delete class');
+      toast.error(msg ?? t('failedDelete'));
     }
   }
 
@@ -125,11 +129,11 @@ export default function ClassesPage() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Classes"
-        subtitle="Create and manage your school's classes"
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-            <Plus className="w-4 h-4" /> Add Class
+            <Plus className="w-4 h-4" /> {t('addClass')}
           </Button>
         }
       />
@@ -137,8 +141,8 @@ export default function ClassesPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 max-w-md">
         {[
-          { label: 'Total Classes', value: classes.length, icon: Layers, color: 'text-blue-400' },
-          { label: 'Total Students', value: totalStudents, icon: Users, color: 'text-emerald-400' },
+          { label: t('totalClasses'), value: classes.length, icon: Layers, color: 'text-blue-400' },
+          { label: t('totalStudents'), value: totalStudents, icon: Users, color: 'text-emerald-400' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
@@ -162,10 +166,10 @@ export default function ClassesPage() {
       ) : classes.length === 0 ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl py-16 text-center">
           <GraduationCap className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
-          <p className="text-zinc-400 font-medium">No classes yet</p>
-          <p className="text-zinc-600 text-sm mt-1">Add a class so you can enrol students and create exams.</p>
+          <p className="text-zinc-400 font-medium">{t('noClasses')}</p>
+          <p className="text-zinc-600 text-sm mt-1">{t('noClassesDesc')}</p>
           <Button onClick={openCreate} className="mt-4 bg-blue-600 hover:bg-blue-700 text-white gap-2">
-            <Plus className="w-4 h-4" /> Add your first class
+            <Plus className="w-4 h-4" /> {t('addFirstClass')}
           </Button>
         </div>
       ) : (
@@ -207,10 +211,10 @@ export default function ClassesPage() {
               </div>
               <div className="flex items-center gap-4 mt-4 text-xs text-zinc-500">
                 <span className="inline-flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5" /> {c._count.students} student{c._count.students === 1 ? '' : 's'}
+                  <Users className="w-3.5 h-3.5" /> {t('students', { count: c._count.students })}
                 </span>
-                {c.capacity != null && <span>Capacity {c.capacity}</span>}
-                {c.teacher && <span className="truncate">CT: {c.teacher.firstName} {c.teacher.lastName}</span>}
+                {c.capacity != null && <span>{t('capacity')} {c.capacity}</span>}
+                {c.teacher && <span className="truncate">{t('ct')} {c.teacher.firstName} {c.teacher.lastName}</span>}
               </div>
             </motion.div>
           ))}
@@ -223,16 +227,16 @@ export default function ClassesPage() {
           {open && (
             <DialogContent>
               <DialogHeader>
-                <DialogTitle className="text-white">{form.id ? 'Edit Class' : 'Add Class'}</DialogTitle>
+                <DialogTitle className="text-white">{form.id ? t('editClassTitle') : t('addClassTitle')}</DialogTitle>
                 <DialogDescription>
-                  {form.id ? 'Update the class details.' : 'Create a new class for your school.'}
+                  {form.id ? t('editClassDesc') : t('addClassDesc')}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Class Name *</Label>
+                    <Label>{t('className')} *</Label>
                     <Input
                       value={form.name}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -241,7 +245,7 @@ export default function ClassesPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Section</Label>
+                    <Label>{t('section')}</Label>
                     <Input
                       value={form.section}
                       onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))}
@@ -251,7 +255,7 @@ export default function ClassesPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Academic Year *</Label>
+                    <Label>{t('academicYear')} *</Label>
                     <Input
                       value={form.academicYear}
                       onChange={(e) => setForm((f) => ({ ...f, academicYear: e.target.value }))}
@@ -259,7 +263,7 @@ export default function ClassesPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Capacity</Label>
+                    <Label>{t('capacity')}</Label>
                     <Input
                       type="number"
                       value={form.capacity}
@@ -272,11 +276,11 @@ export default function ClassesPage() {
 
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving} className="text-zinc-400">
-                  Cancel
+                  {tc('cancel')}
                 </Button>
                 <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {form.id ? 'Save Changes' : 'Create Class'}
+                  {form.id ? t('submitSave') : t('submitCreate')}
                 </Button>
               </DialogFooter>
             </DialogContent>
