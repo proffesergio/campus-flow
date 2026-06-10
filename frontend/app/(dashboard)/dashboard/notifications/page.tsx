@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Send, History, Users, Mail, MessageSquare, Bell, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,13 +23,6 @@ interface NotificationLog {
 
 interface LogMeta { total: number; page: number; limit: number; totalPages: number }
 
-const CHANNEL_LABELS: Record<string, string> = {
-  in_app: 'In-App', email: 'Email', sms: 'SMS',
-};
-const TYPE_LABELS: Record<string, string> = {
-  fee_reminder: 'Fee Reminder', attendance_alert: 'Attendance Alert',
-  exam_result: 'Exam Result', broadcast: 'Broadcast', system: 'System',
-};
 const STATUS_STYLE: Record<string, string> = {
   sent: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   queued: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
@@ -37,14 +31,17 @@ const STATUS_STYLE: Record<string, string> = {
 
 const VARIABLES = ['{{studentName}}', '{{schoolName}}', '{{amount}}', '{{dueDate}}', '{{attendancePercent}}'];
 
-const TARGET_GROUPS = [
-  { value: 'all_parents', label: 'All Parents' },
-  { value: 'all_teachers', label: 'All Teachers' },
-  { value: 'all_students', label: 'All Students' },
-  { value: 'school_admin', label: 'All Admins' },
-];
-
 export default function NotificationsPage() {
+  const t = useTranslations('notifications');
+  const tc = useTranslations('common');
+
+  const TARGET_GROUPS = [
+    { value: 'all_parents',  label: t('targetAllParents') },
+    { value: 'all_teachers', label: t('targetAllTeachers') },
+    { value: 'all_students', label: t('targetAllStudents') },
+    { value: 'school_admin', label: t('targetAllAdmins') },
+  ];
+
   const [tab, setTab] = useState<'compose' | 'logs'>('compose');
 
   // Compose state
@@ -72,9 +69,9 @@ export default function NotificationsPage() {
       );
       setLogs(res.data.data);
       setLogMeta(res.data.meta);
-    } catch { toast.error('Failed to load logs'); }
+    } catch { toast.error(t('failedLoadLogs')); }
     finally { setLogsLoading(false); }
-  }, [logPage, channelFilter]);
+  }, [logPage, channelFilter, t]);
 
   useEffect(() => {
     if (tab === 'logs') fetchLogs();
@@ -94,22 +91,22 @@ export default function NotificationsPage() {
   }
 
   async function handleSend() {
-    if (!message.trim()) { toast.error('Message is required'); return; }
+    if (!message.trim()) { toast.error(t('messageRequired')); return; }
     const activeChannels = Object.entries(channels).filter(([, v]) => v).map(([k]) => k);
-    if (activeChannels.length === 0) { toast.error('Select at least one channel'); return; }
+    if (activeChannels.length === 0) { toast.error(t('selectChannel')); return; }
     if (!confirm(`Send to ${TARGET_GROUPS.find((g) => g.value === targetGroup)?.label} via ${activeChannels.join(', ')}?`)) return;
     setSending(true);
     try {
       await api.post('/notifications/broadcast', {
         targetGroup, channels: activeChannels, subject, message,
       });
-      toast.success('Broadcast sent successfully');
+      toast.success(t('broadcastSent'));
       setSubject('');
       setMessage('');
       setPreview(false);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? 'Failed to send broadcast');
+      toast.error(msg ?? t('failedBroadcast'));
     }
     finally { setSending(false); }
   }
@@ -119,15 +116,15 @@ export default function NotificationsPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Notifications</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">Broadcast messages to parents, students, and staff</p>
+        <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+        <p className="text-sm text-zinc-500 mt-0.5">{t('subtitle')}</p>
       </div>
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-zinc-800">
         {[
-          { key: 'compose', label: 'Compose', icon: Send },
-          { key: 'logs', label: 'Send History', icon: History },
+          { key: 'compose', label: t('tabCompose'), icon: Send },
+          { key: 'logs',    label: t('tabHistory'), icon: History },
         ].map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -150,7 +147,7 @@ export default function NotificationsPage() {
             {/* Target group */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                <Users className="w-4 h-4" /> Recipients
+                <Users className="w-4 h-4" /> {t('recipients')}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {TARGET_GROUPS.map((g) => (
@@ -171,12 +168,12 @@ export default function NotificationsPage() {
 
             {/* Channels */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Channels</label>
+              <label className="text-sm font-medium text-zinc-300">{t('channels')}</label>
               <div className="flex gap-3">
                 {[
-                  { key: 'in_app', label: 'In-App', icon: Bell },
-                  { key: 'email', label: 'Email', icon: Mail },
-                  { key: 'sms', label: 'SMS', icon: MessageSquare },
+                  { key: 'in_app', label: t('channelInApp'), icon: Bell },
+                  { key: 'email',  label: t('channelEmail'),  icon: Mail },
+                  { key: 'sms',    label: t('channelSms'),    icon: MessageSquare },
                 ].map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
@@ -196,24 +193,24 @@ export default function NotificationsPage() {
 
             {/* Subject */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Subject (Email only)</label>
+              <label className="text-sm font-medium text-zinc-300">{t('subjectEmailOnly')}</label>
               <input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. Fee payment reminder"
+                placeholder={t('subjectPlaceholder')}
                 className={`${inputClass} h-10`}
               />
             </div>
 
             {/* Message */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Message *</label>
+              <label className="text-sm font-medium text-zinc-300">{t('message')} *</label>
               <textarea
                 value={preview ? previewMessage() : message}
                 onChange={(e) => !preview && setMessage(e.target.value)}
                 readOnly={preview}
                 rows={6}
-                placeholder="Write your message here. Use {{variables}} for personalization."
+                placeholder={t('messagePlaceholder')}
                 className={`${inputClass} py-2.5 resize-none`}
               />
             </div>
@@ -226,20 +223,20 @@ export default function NotificationsPage() {
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2"
               >
                 <Send className="w-4 h-4" />
-                {sending ? 'Sending...' : 'Send Broadcast'}
+                {sending ? t('sending') : t('sendBroadcast')}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setPreview((v) => !v)}
                 className="border-zinc-700 text-zinc-300 hover:text-white"
               >
-                {preview ? 'Edit' : 'Preview'}
+                {preview ? t('edit') : t('preview')}
               </Button>
             </div>
 
             {preview && (
               <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 space-y-2">
-                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Preview (sample data)</p>
+                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">{t('previewLabel')}</p>
                 <p className="text-sm text-zinc-200 whitespace-pre-wrap">{previewMessage()}</p>
               </div>
             )}
@@ -248,8 +245,8 @@ export default function NotificationsPage() {
           {/* Sidebar: variable chips */}
           <div className="space-y-4">
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-medium text-zinc-300">Variables</p>
-              <p className="text-xs text-zinc-500">Click to insert into your message</p>
+              <p className="text-sm font-medium text-zinc-300">{t('variablesTitle')}</p>
+              <p className="text-xs text-zinc-500">{t('variablesHint')}</p>
               <div className="flex flex-col gap-2">
                 {VARIABLES.map((v) => (
                   <button
@@ -264,12 +261,12 @@ export default function NotificationsPage() {
             </div>
 
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
-              <p className="text-sm font-medium text-zinc-300">Tips</p>
+              <p className="text-sm font-medium text-zinc-300">{t('tipsTitle')}</p>
               <ul className="text-xs text-zinc-500 space-y-1.5 list-disc list-inside">
-                <li>SMS has a 160-character limit</li>
-                <li>In-App arrives instantly in notification bell</li>
-                <li>Email includes your school logo automatically</li>
-                <li>Use variables for personalized messages</li>
+                <li>{t('tip1')}</li>
+                <li>{t('tip2')}</li>
+                <li>{t('tip3')}</li>
+                <li>{t('tip4')}</li>
               </ul>
             </div>
           </div>
@@ -284,10 +281,10 @@ export default function NotificationsPage() {
               onChange={(e) => { setChannelFilter(e.target.value); setLogPage(1); }}
               className="h-9 bg-zinc-800 border border-zinc-700 rounded-lg px-3 text-xs text-white"
             >
-              <option value="">All Channels</option>
-              <option value="in_app">In-App</option>
-              <option value="email">Email</option>
-              <option value="sms">SMS</option>
+              <option value="">{t('allChannels')}</option>
+              <option value="in_app">{t('channelInApp')}</option>
+              <option value="email">{t('channelEmail')}</option>
+              <option value="sms">{t('channelSms')}</option>
             </select>
           </div>
 
@@ -295,7 +292,10 @@ export default function NotificationsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-zinc-800">
-                  {['Type', 'Channel', 'Subject', 'Recipient', 'Status', 'Sent At'].map((h) => (
+                  {[
+                    t('colType'), t('colChannel'), t('colSubject'),
+                    t('colRecipient'), t('colStatus'), t('colSentAt'),
+                  ].map((h) => (
                     <th key={h} className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">{h}</th>
                   ))}
                 </tr>
@@ -313,17 +313,23 @@ export default function NotificationsPage() {
                   <tr>
                     <td colSpan={6} className="px-4 py-12 text-center">
                       <CheckCircle className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                      <p className="text-zinc-500 text-sm">No notifications sent yet</p>
+                      <p className="text-zinc-500 text-sm">{t('noLogsSent')}</p>
                     </td>
                   </tr>
                 ) : (
                   logs.map((log) => (
                     <tr key={log.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
-                      <td className="px-4 py-3 text-sm text-zinc-300">{TYPE_LABELS[log.type] ?? log.type}</td>
-                      <td className="px-4 py-3 text-sm text-zinc-400">{CHANNEL_LABELS[log.channel] ?? log.channel}</td>
+                      <td className="px-4 py-3 text-sm text-zinc-300">
+                        {t(`typeLabels.${log.type}` as `typeLabels.${string}`) ?? log.type}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-zinc-400">
+                        {log.channel === 'in_app' ? t('channelInApp') :
+                         log.channel === 'email' ? t('channelEmail') :
+                         log.channel === 'sms' ? t('channelSms') : log.channel}
+                      </td>
                       <td className="px-4 py-3 text-sm text-zinc-300 max-w-48 truncate">{log.subject || '—'}</td>
                       <td className="px-4 py-3 text-sm text-zinc-400">
-                        {log.recipient ? `${log.recipient.firstName} ${log.recipient.lastName}` : 'Broadcast'}
+                        {log.recipient ? `${log.recipient.firstName} ${log.recipient.lastName}` : t('recipientBroadcast')}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[log.status] ?? STATUS_STYLE.queued}`}>
@@ -343,10 +349,10 @@ export default function NotificationsPage() {
           {logMeta && logMeta.totalPages > 1 && (
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" disabled={logPage <= 1}
-                onClick={() => setLogPage((p) => p - 1)} className="text-zinc-400">Previous</Button>
-              <span className="text-xs text-zinc-500">Page {logPage} of {logMeta.totalPages}</span>
+                onClick={() => setLogPage((p) => p - 1)} className="text-zinc-400">{tc('previous')}</Button>
+              <span className="text-xs text-zinc-500">{tc('page')} {logPage} {tc('of')} {logMeta.totalPages}</span>
               <Button variant="ghost" size="sm" disabled={logPage >= logMeta.totalPages}
-                onClick={() => setLogPage((p) => p + 1)} className="text-zinc-400">Next</Button>
+                onClick={() => setLogPage((p) => p + 1)} className="text-zinc-400">{tc('next')}</Button>
             </div>
           )}
         </div>

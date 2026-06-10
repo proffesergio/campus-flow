@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Pencil, Trash2, BarChart3 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -38,20 +39,24 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
-const FREQ_LABELS: Record<string, string> = {
-  monthly: 'Monthly', quarterly: 'Quarterly', annual: 'Annual', one_time: 'One-time',
-};
-const TYPE_LABELS: Record<string, string> = {
-  tuition: 'Tuition', exam: 'Exam', admission: 'Admission',
-  transport: 'Transport', library: 'Library', other: 'Other',
-};
-
 function fmt(a: string, currency = 'BDT') {
   const n = parseFloat(a);
   return currency === 'BDT' ? `৳${n.toLocaleString()}` : `${currency} ${n.toLocaleString()}`;
 }
 
 export default function FeeStructuresPage() {
+  const t = useTranslations('finance');
+  const tc = useTranslations('common');
+
+  const FREQ_LABELS: Record<string, string> = {
+    monthly: t('freqMonthly'),
+    quarterly: t('freqQuarterly'),
+    annual: t('freqAnnual'),
+    one_time: t('freqOneTime'),
+  };
+
+  const TYPE_LABEL_KEYS = ['tuition', 'exam', 'admission', 'transport', 'library', 'other'] as const;
+
   const [structures, setStructures] = useState<FeeStructure[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,16 +68,16 @@ export default function FeeStructuresPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const fetch = useCallback(async () => {
+  const fetchStructures = useCallback(async () => {
     setLoading(true);
     try {
       const r = await api.get<{ success: boolean; data: FeeStructure[] }>('/finance/fee-structures');
       setStructures(r.data.data ?? []);
-    } catch { toast.error('Failed to load fee structures'); }
+    } catch { toast.error(t('failedLoad')); }
     finally { setLoading(false); }
-  }, []);
+  }, [t]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchStructures(); }, [fetchStructures]);
   useEffect(() => {
     api.get<{ success: boolean; data: Class[] }>('/classes')
       .then((r) => setClasses(r.data.data)).catch(() => {});
@@ -100,30 +105,30 @@ export default function FeeStructuresPage() {
       const payload = { ...data, classId: data.classId || null };
       if (editing) {
         await api.put(`/finance/fee-structures/${editing.id}`, payload);
-        toast.success('Fee structure updated');
+        toast.success(t('structureUpdated'));
       } else {
         await api.post('/finance/fee-structures', payload);
-        toast.success('Fee structure created');
+        toast.success(t('structureCreated'));
       }
       setDrawerOpen(false);
-      fetch();
+      fetchStructures();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? 'Failed to save');
+      toast.error(msg ?? t('failedSave'));
     }
   }
 
   async function handleDelete(id: string, invoiceCount: number) {
     if (invoiceCount > 0) {
-      toast.error(`Cannot delete — ${invoiceCount} invoice(s) reference this structure`);
+      toast.error(t('cannotDelete', { count: invoiceCount }));
       return;
     }
-    if (!confirm('Delete this fee structure?')) return;
+    if (!confirm(t('confirmDelete'))) return;
     try {
       await api.delete(`/finance/fee-structures/${id}`);
-      toast.success('Deleted');
-      fetch();
-    } catch { toast.error('Failed to delete'); }
+      toast.success(t('deleted'));
+      fetchStructures();
+    } catch { toast.error(t('failedDelete')); }
   }
 
   const inputClass = 'bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500';
@@ -140,12 +145,12 @@ export default function FeeStructuresPage() {
             </button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">Fee Structures</h1>
-            <p className="text-sm text-zinc-500 mt-0.5">Define reusable fee templates for your school</p>
+            <h1 className="text-2xl font-bold text-white">{t('feeStructuresTitle')}</h1>
+            <p className="text-sm text-zinc-500 mt-0.5">{t('feeStructuresSubtitle')}</p>
           </div>
         </div>
         <Button onClick={() => openDrawer()} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-          <Plus className="w-4 h-4" /> New Structure
+          <Plus className="w-4 h-4" /> {t('newStructure')}
         </Button>
       </div>
 
@@ -153,7 +158,10 @@ export default function FeeStructuresPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-800">
-              {['Name', 'Type', 'Frequency', 'Amount', 'Class', 'Academic Year', 'Invoices', ''].map((h) => (
+              {[
+                t('colName'), t('colType'), t('colFrequency'), t('colAmount'),
+                t('colClass'), t('colAcademicYear'), t('colInvoices'), '',
+              ].map((h) => (
                 <th key={h} className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider px-4 py-3">{h}</th>
               ))}
             </tr>
@@ -171,9 +179,9 @@ export default function FeeStructuresPage() {
               <tr>
                 <td colSpan={8} className="px-4 py-12 text-center">
                   <BarChart3 className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                  <p className="text-zinc-500">No fee structures yet</p>
+                  <p className="text-zinc-500">{t('noFeeStructures')}</p>
                   <button onClick={() => openDrawer()} className="text-blue-400 text-sm hover:underline mt-1">
-                    Create your first fee structure
+                    {t('createFirstFeeStructure')}
                   </button>
                 </td>
               </tr>
@@ -184,11 +192,11 @@ export default function FeeStructuresPage() {
                     <p className="text-sm font-medium text-white">{fs.name}</p>
                     {fs.description && <p className="text-xs text-zinc-500 truncate max-w-40">{fs.description}</p>}
                   </td>
-                  <td className="px-4 py-3 text-sm text-zinc-300">{TYPE_LABELS[fs.feeType] ?? fs.feeType}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-300">{t(`typeLabels.${fs.feeType}` as `typeLabels.${typeof TYPE_LABEL_KEYS[number]}`) ?? fs.feeType}</td>
                   <td className="px-4 py-3 text-sm text-zinc-300">{FREQ_LABELS[fs.frequency] ?? fs.frequency}</td>
                   <td className="px-4 py-3 text-sm font-medium text-white">{fmt(fs.amount, fs.currency)}</td>
                   <td className="px-4 py-3 text-sm text-zinc-500">
-                    {fs.class ? `${fs.class.name}${fs.class.section ? ` – ${fs.class.section}` : ''}` : 'All classes'}
+                    {fs.class ? `${fs.class.name}${fs.class.section ? ` – ${fs.class.section}` : ''}` : t('allClasses')}
                   </td>
                   <td className="px-4 py-3 text-sm text-zinc-500">{fs.academicYear}</td>
                   <td className="px-4 py-3 text-sm text-zinc-400">{fs._count.invoices}</td>
@@ -217,53 +225,55 @@ export default function FeeStructuresPage() {
           <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-zinc-900 border-l border-zinc-800 z-50 overflow-y-auto">
             <div className="p-6">
               <h2 className="text-xl font-bold text-white mb-6">
-                {editing ? 'Edit Fee Structure' : 'New Fee Structure'}
+                {editing ? t('editFeeStructure') : t('newFeeStructure')}
               </h2>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className={labelClass}>Name *</label>
-                  <Input {...register('name')} placeholder="e.g. Monthly Tuition" className={inputClass} />
+                  <label className={labelClass}>{t('fieldName')} *</label>
+                  <Input {...register('name')} placeholder={t('placeholderName')} className={inputClass} />
                   {errors.name && <p className={errorClass}>{errors.name.message}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <label className={labelClass}>Description</label>
-                  <Input {...register('description')} placeholder="Optional description" className={inputClass} />
+                  <label className={labelClass}>{t('fieldDescription')}</label>
+                  <Input {...register('description')} placeholder={t('placeholderDescription')} className={inputClass} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className={labelClass}>Amount *</label>
-                    <Input {...register('amount')} type="number" min={1} placeholder="3500" className={inputClass} />
+                    <label className={labelClass}>{t('fieldAmount')} *</label>
+                    <Input {...register('amount')} type="number" min={1} placeholder={t('placeholderAmount')} className={inputClass} />
                     {errors.amount && <p className={errorClass}>{errors.amount.message}</p>}
                   </div>
                   <div className="space-y-1.5">
-                    <label className={labelClass}>Currency</label>
+                    <label className={labelClass}>{t('fieldCurrency')}</label>
                     <Input {...register('currency')} defaultValue="BDT" className={inputClass} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className={labelClass}>Frequency *</label>
+                    <label className={labelClass}>{t('fieldFrequency')} *</label>
                     <Select onValueChange={(v) => setValue('frequency', v as FormData['frequency'])}>
                       <SelectTrigger className={`w-full ${inputClass}`}>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={tc('filter')} />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-800 border-zinc-700">
-                        <SelectItem value="monthly" className="text-zinc-300">Monthly</SelectItem>
-                        <SelectItem value="quarterly" className="text-zinc-300">Quarterly</SelectItem>
-                        <SelectItem value="annual" className="text-zinc-300">Annual</SelectItem>
-                        <SelectItem value="one_time" className="text-zinc-300">One-time</SelectItem>
+                        <SelectItem value="monthly" className="text-zinc-300">{t('freqMonthly')}</SelectItem>
+                        <SelectItem value="quarterly" className="text-zinc-300">{t('freqQuarterly')}</SelectItem>
+                        <SelectItem value="annual" className="text-zinc-300">{t('freqAnnual')}</SelectItem>
+                        <SelectItem value="one_time" className="text-zinc-300">{t('freqOneTime')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className={labelClass}>Fee Type *</label>
+                    <label className={labelClass}>{t('fieldFeeType')} *</label>
                     <Select onValueChange={(v) => setValue('feeType', v as FormData['feeType'])}>
                       <SelectTrigger className={`w-full ${inputClass}`}>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={tc('filter')} />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-800 border-zinc-700">
-                        {Object.entries(TYPE_LABELS).map(([k, v]) => (
-                          <SelectItem key={k} value={k} className="text-zinc-300">{v}</SelectItem>
+                        {TYPE_LABEL_KEYS.map((k) => (
+                          <SelectItem key={k} value={k} className="text-zinc-300">
+                            {t(`typeLabels.${k}`)}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -271,24 +281,24 @@ export default function FeeStructuresPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className={labelClass}>Academic Year *</label>
-                    <Input {...register('academicYear')} placeholder="2025-26" className={inputClass} />
+                    <label className={labelClass}>{t('fieldAcademicYear')} *</label>
+                    <Input {...register('academicYear')} placeholder={t('placeholderAcademicYear')} className={inputClass} />
                     {errors.academicYear && <p className={errorClass}>{errors.academicYear.message}</p>}
                   </div>
                   <div className="space-y-1.5">
-                    <label className={labelClass}>Due Day</label>
-                    <Input {...register('dueDay')} type="number" min={1} max={31} placeholder="e.g. 10" className={inputClass} />
-                    <p className="text-xs text-zinc-600">Day of month</p>
+                    <label className={labelClass}>{t('fieldDueDay')}</label>
+                    <Input {...register('dueDay')} type="number" min={1} max={31} placeholder={t('placeholderDueDay')} className={inputClass} />
+                    <p className="text-xs text-zinc-600">{t('fieldDueDayHint')}</p>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className={labelClass}>Class (optional)</label>
+                  <label className={labelClass}>{t('fieldClass')}</label>
                   <Select onValueChange={(v) => setValue('classId', v === 'all' ? '' : v)}>
                     <SelectTrigger className={`w-full ${inputClass}`}>
-                      <SelectValue placeholder="All classes" />
+                      <SelectValue placeholder={t('allClasses')} />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-800 border-zinc-700">
-                      <SelectItem value="all" className="text-zinc-300">All classes</SelectItem>
+                      <SelectItem value="all" className="text-zinc-300">{t('allClasses')}</SelectItem>
                       {classes.map((c) => (
                         <SelectItem key={c.id} value={c.id} className="text-zinc-300">
                           {c.name}{c.section ? ` – ${c.section}` : ''}
@@ -299,10 +309,10 @@ export default function FeeStructuresPage() {
                 </div>
                 <div className="flex gap-3 pt-2">
                   <Button type="submit" disabled={isSubmitting} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                    {isSubmitting ? 'Saving...' : editing ? 'Update' : 'Create'}
+                    {isSubmitting ? t('saving') : editing ? tc('update') : tc('create')}
                   </Button>
                   <Button type="button" variant="ghost" onClick={() => setDrawerOpen(false)} className="flex-1 text-zinc-400">
-                    Cancel
+                    {tc('cancel')}
                   </Button>
                 </div>
               </form>
