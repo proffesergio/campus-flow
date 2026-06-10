@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Users } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 interface Child {
@@ -16,6 +17,7 @@ interface Child {
 }
 
 export default function ParentHome() {
+  const t = useTranslations('parent');
   const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -31,8 +33,8 @@ export default function ParentHome() {
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">My Children</h1>
-        <p className="text-sm text-zinc-400 mt-1">Tap a child to view attendance, results and fees.</p>
+        <h1 className="text-2xl font-bold text-white">{t('myChildren')}</h1>
+        <p className="text-sm text-zinc-400 mt-1">{t('homeSubtitle')}</p>
       </div>
 
       {loading && (
@@ -44,14 +46,14 @@ export default function ParentHome() {
       )}
 
       {!loading && error && (
-        <p className="text-sm text-red-400">Couldn&apos;t load your children. Please try again later.</p>
+        <p className="text-sm text-red-400">{t('loadError')}</p>
       )}
 
       {!loading && !error && children.length === 0 && (
         <div className="text-center py-16 text-zinc-500">
           <Users className="w-10 h-10 mx-auto mb-3 opacity-50" />
-          <p>No children are linked to your account yet.</p>
-          <p className="text-xs mt-1">Please contact the school office to link your child.</p>
+          <p>{t('noChildren')}</p>
+          <p className="text-xs mt-1">{t('noChildrenHint')}</p>
         </div>
       )}
 
@@ -76,7 +78,7 @@ export default function ParentHome() {
                 </p>
                 <p className="text-sm text-zinc-400 truncate">
                   {cls}
-                  {c.rollNumber ? ` · Roll ${c.rollNumber}` : ''}
+                  {c.rollNumber ? ` · ${t('roll')} ${c.rollNumber}` : ''}
                 </p>
               </div>
               <ChevronRight className="w-5 h-5 text-zinc-600 flex-shrink-0" />

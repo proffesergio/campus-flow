@@ -874,5 +874,33 @@
     "quickAddSubject": "New Subject",
     "quickAddExam": "New Exam",
     "quickAddNotice": "New Notice"
+  },
+  "parent": {
+    "portal": "Parent Portal",
+    "myChildren": "My Children",
+    "notices": "Notices",
+    "logout": "Logout",
+    "failedLogout": "Failed to logout",
+    "homeSubtitle": "Tap a child to view attendance, results and fees.",
+    "loadError": "Couldn’t load your children. Please try again later.",
+    "noChildren": "No children are linked to your account yet.",
+    "noChildrenHint": "Please contact the school office to link your child.",
+    "roll": "Roll",
+    "noNotices": "No notices yet.",
+    "childNotFound": "This child could not be found for your account.",
+    "backToChildren": "Back to my children",
+    "attendance": "Attendance",
+    "classRank": "Class Rank",
+    "pendingFees": "Pending Fees",
+    "invoicesCount": "{count} invoice(s)",
+    "allClear": "All clear",
+    "tabAttendance": "Attendance",
+    "tabResults": "Results",
+    "tabFees": "Fees",
+    "noAttendance": "No attendance records yet.",
+    "noResults": "No published results yet.",
+    "noInvoices": "No invoices.",
+    "absent": "Absent",
+    "due": "Due {date}"
   }
 }
