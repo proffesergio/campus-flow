@@ -23,6 +23,66 @@
 </div>
 
 ---
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0F172A,100:8B5CF6&height=180&section=header&text=Campus-Flow&fontSize=38&fontColor=fff&animation=fadeIn&fontAlignY=35&desc=AI%20School%20Management%20System&descAlignY=55&descAlign=50" />
+
+<div align="center">
+
+### 🎓 A Modern School Management System with AI Features
+**For Bangladeshi schools & colleges - attendance, fees, results, AI chatbot.**
+
+[TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+[Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+[AI](https://img.shields.io/badge/AI_Agent-8B5CF6?style=for-the-badge&logo=openai&logoColor=white)
+[Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
+
+</div>
+
+---
+
+### Problem
+
+> 90% Bangladeshi schools use paper registers. Parents don't know attendance, teachers waste 2hrs daily.
+
+### Solution
+
+- 📊 AI attendance with face detection (optional)
+- 💰 Fee management with bKash/Nagad integration
+- 📈 Auto result generation, transcript
+- 🤖 AI chatbot: "How was my child today?" - RAG over school data
+- 📱 Parent app, SMS alerts in Bangla
+
+### Quick Start
+
+```bash
+git clone https://github.com/proffesergio/campus-flow.git
+cd campus-flow
+npm install
+npx prisma migrate dev
+npm run dev
+```
+
+### Stack
+
+- **Frontend:** Next.js, TypeScript, Tailwind, shadcn/ui
+- **Backend:** NestJS/Next.js API, Prisma, PostgreSQL
+- **AI:** LangChain, OpenAI, Vector DB for school Q&A
+- **Auth:** NextAuth, role-based (Admin, Teacher, Parent, Student)
+
+### AI Features (Vibe Coding)
+
+- [x] Basic CRUD
+- [ ] AI attendance anomaly: "Rahim absent 3 days"
+- [ ] RAG chatbot for parents
+- [ ] Auto timetable generator with AI
+
+### Demo
+
+Admin: admin@demo.com / admin123
+Teacher: teacher@demo.com / teacher123
+
+<div align="center">
+Built for education in Bangladesh 🎓
+</div>
 
 ## ✨ Why CampusFlow
 
